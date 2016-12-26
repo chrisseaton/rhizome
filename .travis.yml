@@ -1,0 +1,16 @@
+language: ruby
+
+os:
+  - linux
+  - osx
+
+dist:
+  - trusty # to be able to use a recent Rubinius
+
+rvm:
+  - ruby-2.4.0
+  - rbx-3.60
+  - jruby-9.1.5.0
+
+install: gem install bundle && bundle install # to be able to use jruby-9.1.5.0 on macOS
+script: bundle exec rspec
