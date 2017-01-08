@@ -109,7 +109,7 @@ you'd use `not` and then `branch`.
 
 These are the instructions in the RubyJIT bytecode format:
 
-* `trace` marks a line for `set_trace_func`
+* `trace line` marks a line for `set_trace_func`
 * `self` pushes `self` onto the stack
 * `arg n` pushes the nth argument onto the stack
 * `load name` loads a local variable onto the stack

@@ -192,13 +192,13 @@ END
     def self.mask_traces(insns)
       insns = insns.reject { |i| i.first == :trace }
 
-      insns.each do |insn|
+      insns.map do |insn|
         if [:branch, :branchif].include?(insn.first)
+          insn = insn.dup
           insn[1] = 0
         end
+        insn
       end
-
-      insns
     end
 
     ADD_BYTECODE_RUBYJIT_FROM_JRUBY = [
