@@ -96,3 +96,9 @@ code? The least recently used? One at random?
 We don't often think about just-in-time compilers as being a cache, but becuase
 you could recompile methods every time they were called if you wanted to, we can
 indeed think of storing the compiled version as just another cache.
+
+### Potential projects
+
+* Implement a code cache that requests large blocks of memory and allocates from
+  them, rather than calling `mmap` for each allocation.
+* Implement code cache eviction when there is memory pressure.

@@ -156,7 +156,7 @@ module RubyJIT
     end
     
     def write(offset, bytes)
-      raise StandardError unless writable?
+      raise 'memory not writable' unless writable?
       raise RangeError if offset < 0 || offset + bytes.size > size
       
       # The various FFIs want binary data as a compact String but in the rest
@@ -174,7 +174,7 @@ module RubyJIT
     end
     
     def read(offset, length)
-      raise StandardError unless readable?
+      raise 'memory not readable' unless readable?
       raise RangeError if offset < 0 || offset + length > size
       
       if Config::RBX || Config::JRUBY
@@ -191,7 +191,7 @@ module RubyJIT
     # as if it was a Ruby Proc object.
     
     def to_proc(arg_types, ret_type)
-      raise StandardError unless executable?
+      raise 'memory not executable' unless executable?
       
       # The various FFI mechanisms already provide the basic tool we need for
       # taking a native memory address and allowing it to be called as a
@@ -220,7 +220,7 @@ module RubyJIT
     end
     
     def free
-      raise StandardError unless @address
+      raise 'already freed' unless @address
       POSIX::munmap(@address, @size)
       @address = nil
     end
@@ -233,7 +233,7 @@ module RubyJIT
       flags |= POSIX::PROT_WRITE if writable?
       flags |= POSIX::PROT_EXEC if executable?
       result = POSIX::mprotect(@address, @size, flags)
-      raise StandardError unless result
+      raise 'could not change memory permissions' unless result
     end
     
   end
