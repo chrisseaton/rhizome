@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,12 +19,32 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/builder'
+# The mechanism that we use to call native functions and access native memory
+# varies by the implementation of Ruby.
+
+module RubyJIT
+  module IR
+
+    class Node
+
+      attr_reader :op
+      attr_reader :inputs
+      attr_reader :outputs
+
+      def initialize(op)
+        @op = op
+        @inputs = {}
+        @outputs = {}
+      end
+
+      def output_to(output_name, to, input_name=output_name)
+        outputs[output_name] ||= []
+        outputs[output_name].push to
+        to.inputs[input_name] ||= []
+        to.inputs[input_name].push self
+      end
+
+    end
+
+  end
+end

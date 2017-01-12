@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,12 +19,29 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/builder'
+require 'rubyjit'
+
+describe RubyJIT::IR::Graph do
+
+  describe '.new' do
+
+    it 'creates a graph with start and finish nodes' do
+      graph = RubyJIT::IR::Graph.new
+      expect(graph.start).to be_a(RubyJIT::IR::Node)
+      expect(graph.finish).to be_a(RubyJIT::IR::Node)
+    end
+
+    it 'creates a graph with the start node outputting control to the finish node' do
+      graph = RubyJIT::IR::Graph.new
+      expect(graph.start.outputs[:control]).to include(graph.finish)
+    end
+
+    it 'creates a graph with the finish node inputting control from the start node' do
+      graph = RubyJIT::IR::Graph.new
+      expect(graph.finish.inputs[:control]).to include(graph.start)
+    end
+
+  end
+
+
+end
