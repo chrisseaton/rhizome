@@ -19,8 +19,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# The mechanism that we use to call native functions and access native memory
-# varies by the implementation of Ruby.
+require 'set'
 
 module RubyJIT
   module IR
@@ -34,6 +33,49 @@ module RubyJIT
         @start = Node.new(:start)
         @finish = Node.new(:finish)
         start.output_to(:control, finish)
+      end
+
+      def visit_nodes
+        worklist = [@start]
+        visited = Set.new
+        until worklist.empty?
+          node = worklist.pop
+          if visited.add?(node)
+            yield node
+            worklist.push *node.inputs.values.flatten
+            worklist.push *node.outputs.values.flatten
+          end
+        end
+      end
+
+      def find_node(op=nil)
+        visit_nodes do |node|
+          if !op || node.op == op
+            if !block_given? || yield(node)
+              return node
+            end
+          end
+        end
+      end
+
+      def contains?(&block)
+        not find_node(&block).nil?
+      end
+
+      def size
+        count = 0
+        visit_nodes do
+          count += 1
+        end
+        count
+      end
+
+      def self.from_fragment(fragment)
+        graph = RubyJIT::IR::Graph.new
+        graph.start.output_to :control, fragment.region
+        fragment.last_side_effect.output_to :control, graph.finish
+        fragment.last_node.output_to :value, graph.finish
+        graph
       end
 
     end

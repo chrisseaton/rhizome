@@ -19,9 +19,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# The mechanism that we use to call native functions and access native memory
-# varies by the implementation of Ruby.
-
 require 'set'
 
 module RubyJIT
@@ -82,6 +79,77 @@ module RubyJIT
         end
 
         blocks
+      end
+
+      GraphFragment = Struct.new(:region, :last_node, :last_side_effect, :names_out, :stack_out)
+
+      def basic_block_to_graph(names_in, stack_in, insns)
+        region = Node.new(:region)
+        last_node = nil
+        last_side_effect = region
+
+        names = names_in.dup
+        stack = stack_in.dup
+
+        insns.each do |insn|
+          case insn.first
+            when :trace
+              last_node = Node.new(:trace, line: insn[1])
+            when :self
+              last_node = Node.new(:self)
+              stack.push last_node
+            when :arg
+              last_node = Node.new(:arg, arg: insn[1])
+              stack.push last_node
+            when :load
+              stack.push names[insn[1]]
+            when :store
+              names[insn[1]] = stack.pop
+            when :push
+              last_node = Node.new(:constant, value: insn[1])
+              stack.push last_node
+            when :send
+              name = insn[1]
+              argc = insn[2]
+              send_node = Node.new(:send, name: name)
+              argc.times do
+                arg_node = stack.pop
+                arg_node.output_to :value, send_node, :args
+                if arg_node.has_control_input?
+                  arg_node.output_to :control, send_node
+                end
+              end
+              receiver_node = stack.pop
+              receiver_node.output_to :value, send_node, :receiver
+              stack.push send_node
+              last_node = send_node
+            when :not
+              value_node = stack.pop
+              not_node = Node.new(:not)
+              value_node.output_to :value, not_node
+              stack.push not_node
+              send_node = not_node
+            when :branch
+              branch_node = Node.new(:branch)
+              last_node = branch_node
+            when :branchif
+              value_node = stack.pop
+              branchif_node = Node.new(:branchif)
+              value_node.output_to :value, branchif_node, :condition
+              last_node = branchif_node
+            when :return
+              last_node = stack.last
+            else
+              raise 'unknown instruction'
+          end
+
+          if [:trace, :send].include?(insn.first)
+            last_side_effect.output_to :control, last_node
+            last_side_effect = last_node
+          end
+        end
+
+        GraphFragment.new(region, last_node, last_side_effect, names, stack)
       end
 
     end

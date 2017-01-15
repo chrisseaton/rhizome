@@ -157,4 +157,93 @@ describe RubyJIT::IR::Builder do
 
   end
 
+  describe '#basic_block_to_graph' do
+
+    describe 'returns a graph fragment' do
+
+      it do
+        expect(@builder.basic_block_to_graph({}, [], [])).to be_a(RubyJIT::IR::Builder::GraphFragment)
+      end
+
+      it 'that has a region node' do
+        region = @builder.basic_block_to_graph({}, [], []).region
+        expect(region).to be_a(RubyJIT::IR::Node)
+        expect(region.op).to eql :region
+      end
+
+      it 'that has a region node' do
+        region = @builder.basic_block_to_graph({}, [], []).region
+        expect(region).to be_a(RubyJIT::IR::Node)
+        expect(region.op).to eql :region
+      end
+
+      it 'that has a last node' do
+        fragment = @builder.basic_block_to_graph({}, [], [])
+        expect(fragment.last_side_effect).to be_a(RubyJIT::IR::Node)
+        expect(fragment.last_side_effect).to eql fragment.region
+      end
+
+      it 'that has a last side-effect node' do
+        fragment = @builder.basic_block_to_graph({}, [], [])
+        expect(fragment.last_side_effect).to be_a(RubyJIT::IR::Node)
+        expect(fragment.last_side_effect).to eql fragment.region
+      end
+
+      it 'that has a list of the value of nodes at the end' do
+        insns = [[:push, 14], [:store, :a]]
+        fragment = @builder.basic_block_to_graph({}, [], insns)
+        a = fragment.names_out[:a]
+        expect(a.op).to eql :constant
+        expect(a.props[:value]).to eql 14
+      end
+
+      it 'that has a stack of values at the end' do
+        insns = [[:push, 14]]
+        fragment = @builder.basic_block_to_graph({}, [], insns)
+        expect(fragment.stack_out.size).to eql 1
+        a = fragment.stack_out.first
+        expect(a.op).to eql :constant
+        expect(a.props[:value]).to eql 14
+      end
+
+    end
+
+    describe 'correctly builds the single basic block in an add function' do
+
+      before :each do
+        @fragment = @builder.basic_block_to_graph({}, [], RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
+        @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
+      end
+
+      it 'with the region, trace and send nodes forming a control flow to the last_side_effect' do
+        region = @graph.find_node(:region)
+        trace_27 = @graph.find_node(:trace) { |t| t.props[:line] == 27 }
+        trace_28 = @graph.find_node(:trace) { |t| t.props[:line] == 28 }
+        send = @graph.find_node(:send)
+        trace_29 = @graph.find_node(:trace) { |t| t.props[:line] == 29 }
+        expect(region.outputs[:control]).to contain_exactly trace_27
+        expect(trace_27.outputs[:control]).to contain_exactly trace_28
+        expect(trace_28.outputs[:control]).to contain_exactly send
+        expect(send.outputs[:control]).to contain_exactly trace_29
+        expect(@fragment.last_side_effect).to eql trace_29
+      end
+
+      it 'with the pure nodes not sending control to any other nodes' do
+        @graph.visit_nodes do |node|
+          if [:arg, :store, :load].include?(node.op)
+            expect(node.outputs[:control]).to be_nil
+          end
+        end
+      end
+
+      it 'with nodes that output control also taking it as input and not outputing it not taking it' do
+        @graph.visit_nodes do |node|
+          expect(node.has_control_input?).to eql node.has_control_output? unless [:start, :finish].include?(node.op)
+        end
+      end
+
+    end
+
+  end
+
 end

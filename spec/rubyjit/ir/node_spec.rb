@@ -30,6 +30,11 @@ describe RubyJIT::IR::Node do
       expect(node.op).to eql :name
     end
 
+    it 'accepts a hash of properties' do
+      node = RubyJIT::IR::Node.new(:name, a: 1)
+      expect(node.props[:a]).to eql 1
+    end
+
   end
 
   describe '#op' do
@@ -37,6 +42,15 @@ describe RubyJIT::IR::Node do
     it 'returns the operation name' do
       node = RubyJIT::IR::Node.new(:name)
       expect(node.op).to eql :name
+    end
+
+  end
+
+  describe '#properts' do
+
+    it 'returns the hash of properties' do
+      node = RubyJIT::IR::Node.new(:name, a: 1)
+      expect(node.props[:a]).to eql 1
     end
 
   end
@@ -100,6 +114,33 @@ describe RubyJIT::IR::Node do
       a.output_to(:value_out, c, :value_in)
       b.output_to(:value_out, c, :value_in)
       expect(c.inputs[:value_in]).to contain_exactly(a, b)
+    end
+
+  end
+
+  describe '#has_control_input?' do
+
+    it 'is true if there is control input' do
+      a = RubyJIT::IR::Node.new(:a)
+      b = RubyJIT::IR::Node.new(:b)
+      a.output_to(:control, b)
+      expect(b.has_control_input?).to be_truthy
+    end
+
+    it 'is true if there is multiple control input' do
+      a = RubyJIT::IR::Node.new(:a)
+      b = RubyJIT::IR::Node.new(:b)
+      c = RubyJIT::IR::Node.new(:c)
+      a.output_to(:control, c)
+      b.output_to(:control, c)
+      expect(c.has_control_input?).to be_truthy
+    end
+
+    it 'is false if there is no control input' do
+      a = RubyJIT::IR::Node.new(:a)
+      b = RubyJIT::IR::Node.new(:b)
+      a.output_to(:value, b)
+      expect(b.has_control_input?).to be_falsey
     end
 
   end

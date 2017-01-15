@@ -19,20 +19,19 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# The mechanism that we use to call native functions and access native memory
-# varies by the implementation of Ruby.
-
 module RubyJIT
   module IR
 
     class Node
 
       attr_reader :op
+      attr_reader :props
       attr_reader :inputs
       attr_reader :outputs
 
-      def initialize(op)
+      def initialize(op, props={})
         @op = op
+        @props = props
         @inputs = {}
         @outputs = {}
       end
@@ -42,6 +41,18 @@ module RubyJIT
         outputs[output_name].push to
         to.inputs[input_name] ||= []
         to.inputs[input_name].push self
+      end
+
+      def has_control_input?
+        not inputs[:control].nil?
+      end
+
+      def has_control_output?
+        not outputs[:control].nil?
+      end
+
+      def inspect
+        "Node<#{object_id}, #{op}, #{props}>"
       end
 
     end

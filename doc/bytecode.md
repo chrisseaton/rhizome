@@ -115,7 +115,7 @@ These are the instructions in the RubyJIT bytecode format:
 * `load name` loads a local variable onto the stack
 * `store name` pops a value off the stack into a local variable
 * `push value` pushes a value such as a number onto the stack
-* `send name argc` pops a value off the stack, followed by `argc` number of parameters, and calls a method on the value
+* `send name argc` pops `argc` number of parameters off the stack, and then a value, and calls a method on the value with the parameters
 * `not` negates the value on the top of the stack
 * `branch index` branches to the instruction at index
 * `branchif index` pops a value off the stack and branches to the instruction at index if it is true
