@@ -99,7 +99,7 @@ module RubyJIT
               last_node = Node.new(:self)
               stack.push last_node
             when :arg
-              last_node = Node.new(:arg, arg: insn[1])
+              last_node = Node.new(:arg, n: insn[1])
               stack.push last_node
             when :load
               stack.push names[insn[1]]
@@ -115,9 +115,6 @@ module RubyJIT
               argc.times do
                 arg_node = stack.pop
                 arg_node.output_to :value, send_node, :args
-                if arg_node.has_control_input?
-                  arg_node.output_to :control, send_node
-                end
               end
               receiver_node = stack.pop
               receiver_node.output_to :value, send_node, :receiver
@@ -128,7 +125,7 @@ module RubyJIT
               not_node = Node.new(:not)
               value_node.output_to :value, not_node
               stack.push not_node
-              send_node = not_node
+              last_node = not_node
             when :branch
               branch_node = Node.new(:branch)
               last_node = branch_node

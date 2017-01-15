@@ -23,6 +23,67 @@ require 'rubyjit'
 
 require_relative '../fixtures'
 
+module RubyJIT::Fixtures::Builder
+
+  def self.control_flows(spec, graph, last_side_effect, *flow)
+    flow = flow.map { |n| resolve(graph, n) }
+
+    1.upto(flow.size - 1).each do |i|
+      n0 = flow[i - 1]
+      n1 = flow[i]
+      spec.expect(n0.outputs[:control]).to spec.contain_exactly n1
+      spec.expect(n1.inputs[:control]).to spec.contain_exactly n0
+    end
+
+    spec.expect(last_side_effect).to spec.eql flow.last
+  end
+
+  def self.data_flows(spec, graph, *flow)
+    flow = flow.dup
+    nodes = {}
+
+    until flow.empty?
+      f = flow.shift
+      if f.is_a?(Symbol)
+        nodes[f] = resolve(graph, flow.shift)
+      elsif f.is_a?(Array)
+        from, from_name, to, to_name = f
+        from = nodes[from] || resolve(graph, from)
+        to = nodes[to] || resolve(graph, to)
+        spec.expect(from.outputs[from_name]).to spec.include to
+        spec.expect(to.inputs[to_name]).to spec.include from
+      else
+        raise 'unexpected data flow declaration'
+      end
+    end
+  end
+
+  def self.resolve(graph, description)
+    if description.is_a?(Symbol)
+      graph.find_node(description)
+    elsif description.is_a?(Proc)
+      graph.find_node(&description)
+    else
+      raise 'unexpected node description'
+    end
+  end
+
+  def self.pure_nodes_have_no_control(spec, graph)
+    graph.visit_nodes do |node|
+      if [:arg, :store, :load].include?(node.op)
+        spec.expect(node.outputs[:control]).to spec.be_nil
+      end
+    end
+  end
+
+  def self.nodes_output_control_iff_input_control(spec, graph)
+    graph.visit_nodes do |node|
+      spec.expect(node.has_control_input?).to spec.eql node.has_control_output? unless [:start, :finish].include?(node.op)
+    end
+  end
+
+end
+
 describe RubyJIT::IR::Builder do
 
   before :each do
@@ -216,30 +277,237 @@ describe RubyJIT::IR::Builder do
       end
 
       it 'with the region, trace and send nodes forming a control flow to the last_side_effect' do
-        region = @graph.find_node(:region)
-        trace_27 = @graph.find_node(:trace) { |t| t.props[:line] == 27 }
-        trace_28 = @graph.find_node(:trace) { |t| t.props[:line] == 28 }
-        send = @graph.find_node(:send)
-        trace_29 = @graph.find_node(:trace) { |t| t.props[:line] == 29 }
-        expect(region.outputs[:control]).to contain_exactly trace_27
-        expect(trace_27.outputs[:control]).to contain_exactly trace_28
-        expect(trace_28.outputs[:control]).to contain_exactly send
-        expect(send.outputs[:control]).to contain_exactly trace_29
-        expect(@fragment.last_side_effect).to eql trace_29
+        RubyJIT::Fixtures::Builder.control_flows(
+            self, @graph, @fragment.last_side_effect,
+            :region,
+            ->(n) { n.op == :trace && n.props[:line] == 27 },
+            ->(n) { n.op == :trace && n.props[:line] == 28 },
+            :send,
+            ->(n) { n.op == :trace && n.props[:line] == 29 }
+        )
+      end
+
+      it 'with data flowing from the args to the send and then to the finish' do
+        RubyJIT::Fixtures::Builder.data_flows(
+            self, @graph,
+            :a, ->(n) { n.op == :arg && n.props[:n] == 0 },
+            :b, ->(n) { n.op == :arg && n.props[:n] == 1 },
+            :add, :send,
+            [:a, :value, :add, :receiver],
+            [:b, :value, :add, :args],
+            [:add, :value, :finish, :value]
+        )
       end
 
       it 'with the pure nodes not sending control to any other nodes' do
-        @graph.visit_nodes do |node|
-          if [:arg, :store, :load].include?(node.op)
-            expect(node.outputs[:control]).to be_nil
-          end
-        end
+        RubyJIT::Fixtures::Builder.pure_nodes_have_no_control self, @graph
       end
 
       it 'with nodes that output control also taking it as input and not outputing it not taking it' do
-        @graph.visit_nodes do |node|
-          expect(node.has_control_input?).to eql node.has_control_output? unless [:start, :finish].include?(node.op)
-        end
+        RubyJIT::Fixtures::Builder.nodes_output_control_iff_input_control self, @graph
+      end
+
+      it 'with a and b as names' do
+        expect(@fragment.names_out.keys).to contain_exactly :a, :b
+      end
+
+      it 'with the return value on the stack' do
+        expect(@fragment.stack_out.size).to eql 1
+      end
+
+    end
+
+    describe 'correctly builds the first basic block in a fib function' do
+
+      before :each do
+        basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
+        block = basic_blocks.values[0]
+        @fragment = @builder.basic_block_to_graph({}, [], block.insns)
+        @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
+      end
+
+      it 'with the region, trace and send nodes forming a control flow to the last_side_effect' do
+        RubyJIT::Fixtures::Builder.control_flows(
+            self, @graph, @fragment.last_side_effect,
+            :region,
+            ->(n) { n.op == :trace && n.props[:line] == 31 },
+            ->(n) { n.op == :trace && n.props[:line] == 32 },
+            :send
+        )
+      end
+
+      it 'with data flowing from the arg and constant to the send, the not and the branchif' do
+        RubyJIT::Fixtures::Builder.data_flows(
+            self, @graph,
+            [:arg, :value, :send, :receiver],
+            [:constant, :value, :send, :args],
+            [:send, :value, :not, :value],
+            [:not, :value, :branchif, :condition]
+        )
+      end
+
+      it 'with the pure nodes not sending control to any other nodes' do
+        RubyJIT::Fixtures::Builder.pure_nodes_have_no_control self, @graph
+      end
+
+      it 'with nodes that output control also taking it as input and not outputing it not taking it' do
+        RubyJIT::Fixtures::Builder.nodes_output_control_iff_input_control self, @graph
+      end
+
+      it 'with n as a name' do
+        expect(@fragment.names_out.keys).to contain_exactly :n
+      end
+
+      it 'with an empty stack' do
+        expect(@fragment.stack_out).to be_empty
+      end
+
+    end
+
+    describe 'correctly builds the second basic block in a fib function' do
+
+      before :each do
+        basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
+        block = basic_blocks.values[1]
+        @fragment = @builder.basic_block_to_graph({n: RubyJIT::IR::Node.new(:n)}, [], block.insns)
+        @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
+      end
+
+      it 'with the region and trace nodes forming a control flow to the last_side_effect' do
+        RubyJIT::Fixtures::Builder.control_flows(
+            self, @graph, @fragment.last_side_effect,
+            :region,
+            ->(n) { n.op == :trace && n.props[:line] == 33 }
+        )
+      end
+
+      it 'with not data flowing because the value is on the stack' do
+        RubyJIT::Fixtures::Builder.data_flows(
+            self, @graph
+        )
+      end
+
+      it 'with the pure nodes not sending control to any other nodes' do
+        RubyJIT::Fixtures::Builder.pure_nodes_have_no_control self, @graph
+      end
+
+      it 'with nodes that output control also taking it as input and not outputing it not taking it' do
+        RubyJIT::Fixtures::Builder.nodes_output_control_iff_input_control self, @graph
+      end
+
+      it 'with n as a name' do
+        expect(@fragment.names_out.keys).to contain_exactly :n
+      end
+
+      it 'with the argument value on the stack' do
+        expect(@fragment.stack_out.size).to eql 1
+        expect(@fragment.stack_out.first.op).to eql :n
+      end
+
+    end
+
+    describe 'correctly builds the third basic block in a fib function' do
+
+      before :each do
+        basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
+        block = basic_blocks.values[2]
+        @fragment = @builder.basic_block_to_graph({n: RubyJIT::IR::Node.new(:n)}, [], block.insns)
+        @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
+      end
+
+      it 'with the region, trace and send nodes forming a control flow to the last_side_effect' do
+        RubyJIT::Fixtures::Builder.control_flows(
+            self, @graph, @fragment.last_side_effect,
+            :region,
+            ->(n) { n.op == :trace && n.props[:line] == 35 },
+            ->(n) { n.op == :send && n.props[:name] == :- && n.inputs[:args].first.props[:value] == 1 },
+            ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs[:args].first.inputs[:args].first.props[:value] == 1 },
+            ->(n) { n.op == :send && n.props[:name] == :- && n.inputs[:args].first.props[:value] == 2 },
+            ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs[:args].first.inputs[:args].first.props[:value] == 2 },
+            ->(n) { n.op == :send && n.props[:name] == :+ }
+        )
+      end
+
+      it 'with data flowing through the expression' do
+        RubyJIT::Fixtures::Builder.data_flows(
+            self, @graph,
+            :const_one, ->(n) { n.op == :constant && n.props[:value] == 1 },
+            :const_two, ->(n) { n.op == :constant && n.props[:value] == 2 },
+            :sub_one, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs[:args].first.props[:value] == 1 },
+            :fib_one, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs[:args].first.inputs[:args].first.props[:value] == 1 },
+            :sub_two, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs[:args].first.props[:value] == 2 },
+            :fib_two, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs[:args].first.inputs[:args].first.props[:value] == 2 },
+            :add, ->(n) { n.op == :send && n.props[:name] == :+ },
+            [:n, :value, :sub_one, :receiver],
+            [:const_one, :value, :sub_one, :args],
+            [:n, :value, :sub_two, :receiver],
+            [:const_two, :value, :sub_two, :args],
+            [:sub_one, :value, :fib_one, :args],
+            [:sub_two, :value, :fib_two, :args],
+            [:fib_one, :value, :add, :receiver],
+            [:fib_two, :value, :add, :args],
+            [:add, :value, :finish, :value]
+        )
+      end
+
+      it 'with the pure nodes not sending control to any other nodes' do
+        RubyJIT::Fixtures::Builder.pure_nodes_have_no_control self, @graph
+      end
+
+      it 'with nodes that output control also taking it as input and not outputing it not taking it' do
+        RubyJIT::Fixtures::Builder.nodes_output_control_iff_input_control self, @graph
+      end
+
+      it 'with n as a name' do
+        expect(@fragment.names_out.keys).to contain_exactly :n
+      end
+
+      it 'with the value from the send on the stack' do
+        expect(@fragment.stack_out.size).to eql 1
+        expect(@fragment.stack_out.first.op).to eql :send
+      end
+
+    end
+
+    describe 'correctly builds the fourth basic block in a fib function' do
+
+      before :each do
+        basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
+        block = basic_blocks.values[3]
+        @fragment = @builder.basic_block_to_graph({n: RubyJIT::IR::Node.new(:n)}, [RubyJIT::IR::Node.new(:stack)], block.insns)
+        @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
+      end
+
+      it 'with the region, trace, and return nodes forming a control flow to the last_side_effect' do
+        RubyJIT::Fixtures::Builder.control_flows(
+            self, @graph, @fragment.last_side_effect,
+            :region,
+            ->(n) { n.op == :trace && n.props[:line] == 37 }
+        )
+      end
+
+      it 'with data flowing from the value on the stack to the finsih' do
+        RubyJIT::Fixtures::Builder.data_flows(
+            self, @graph,
+            [:stack, :value, :finish, :value]
+        )
+      end
+
+      it 'with the pure nodes not sending control to any other nodes' do
+        RubyJIT::Fixtures::Builder.pure_nodes_have_no_control self, @graph
+      end
+
+      it 'with nodes that output control also taking it as input and not outputing it not taking it' do
+        RubyJIT::Fixtures::Builder.nodes_output_control_iff_input_control self, @graph
+      end
+
+      it 'with n as a name' do
+        expect(@fragment.names_out.keys).to contain_exactly :n
+      end
+
+      it 'with the returned value on the stack' do
+        expect(@fragment.stack_out.size).to eql 1
+        expect(@fragment.stack_out.first.op).to eql :stack
       end
 
     end
