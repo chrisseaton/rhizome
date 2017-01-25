@@ -33,12 +33,12 @@ describe RubyJIT::IR::Graph do
 
     it 'creates a graph with the start node outputting control to the finish node' do
       graph = RubyJIT::IR::Graph.new
-      expect(graph.start.outputs[:control]).to include(graph.finish)
+      expect(graph.start.outputs.with_output_name(:control).to_nodes).to include(graph.finish)
     end
 
     it 'creates a graph with the finish node inputting control from the start node' do
       graph = RubyJIT::IR::Graph.new
-      expect(graph.finish.inputs[:control]).to include(graph.start)
+      expect(graph.finish.inputs.with_input_name(:control).from_nodes).to include(graph.start)
     end
 
   end

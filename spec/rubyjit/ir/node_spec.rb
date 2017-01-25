@@ -67,35 +67,35 @@ describe RubyJIT::IR::Node do
       a = RubyJIT::IR::Node.new(:a)
       b = RubyJIT::IR::Node.new(:b)
       a.output_to(:name, b)
-      expect(b.inputs.keys).to include(:name)
+      expect(b.inputs.input_names).to include(:name)
     end
 
     it 'adds the value name to the outputs of the first node' do
       a = RubyJIT::IR::Node.new(:a)
       b = RubyJIT::IR::Node.new(:b)
       a.output_to(:value_out, b, :value_in)
-      expect(a.outputs).to include(:value_out)
+      expect(a.outputs.output_names).to include(:value_out)
     end
 
     it 'adds the value name to the inputs of the second node' do
       a = RubyJIT::IR::Node.new(:a)
       b = RubyJIT::IR::Node.new(:b)
       a.output_to(:value_out, b, :value_in)
-      expect(b.inputs.keys).to include(:value_in)
+      expect(b.inputs.input_names).to include(:value_in)
     end
 
     it 'adds the second node to the outputs of the first with that name' do
       a = RubyJIT::IR::Node.new(:a)
       b = RubyJIT::IR::Node.new(:b)
       a.output_to(:value_out, b, :value_in)
-      expect(a.outputs[:value_out]).to include(b)
+      expect(a.outputs.with_output_name(:value_out).to_nodes).to include(b)
     end
 
     it 'adds the first node to the inputs of the second with that name' do
       a = RubyJIT::IR::Node.new(:a)
       b = RubyJIT::IR::Node.new(:b)
       a.output_to(:value_out, b, :value_in)
-      expect(b.inputs[:value_in]).to include(a)
+      expect(b.inputs.with_input_name(:value_in).from_nodes).to include(a)
     end
 
     it 'builds an array of multiple outputs with the same name' do
@@ -104,7 +104,7 @@ describe RubyJIT::IR::Node do
       c = RubyJIT::IR::Node.new(:c)
       a.output_to(:value_out, b, :value_in)
       a.output_to(:value_out, c, :value_in)
-      expect(a.outputs[:value_out]).to contain_exactly(b, c)
+      expect(a.outputs.with_output_name(:value_out).to_nodes).to contain_exactly(b, c)
     end
 
     it 'builds an array of multiple inputs with the same name' do
@@ -113,7 +113,7 @@ describe RubyJIT::IR::Node do
       c = RubyJIT::IR::Node.new(:c)
       a.output_to(:value_out, c, :value_in)
       b.output_to(:value_out, c, :value_in)
-      expect(c.inputs[:value_in]).to contain_exactly(a, b)
+      expect(c.inputs.with_input_name(:value_in).from_nodes).to contain_exactly(a, b)
     end
 
   end

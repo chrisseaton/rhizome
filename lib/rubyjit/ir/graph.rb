@@ -42,8 +42,8 @@ module RubyJIT
           node = worklist.pop
           if visited.add?(node)
             yield node
-            worklist.push *node.inputs.values.flatten
-            worklist.push *node.outputs.values.flatten
+            worklist.push *node.inputs.nodes
+            worklist.push *node.outputs.nodes
           end
         end
       end

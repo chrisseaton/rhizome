@@ -32,27 +32,70 @@ module RubyJIT
       def initialize(op, props={})
         @op = op
         @props = props
-        @inputs = {}
-        @outputs = {}
+        @inputs = EdgeSet.new([])
+        @outputs = EdgeSet.new([])
       end
 
       def output_to(output_name, to, input_name=output_name)
-        outputs[output_name] ||= []
-        outputs[output_name].push to
-        to.inputs[input_name] ||= []
-        to.inputs[input_name].push self
+        edge = Edge.new(self, output_name, to, input_name)
+        outputs.edges.push edge
+        to.inputs.edges.push edge
       end
 
       def has_control_input?
-        not inputs[:control].nil?
+        inputs.input_names.include?(:control)
       end
 
       def has_control_output?
-        not outputs[:control].nil?
+        outputs.output_names.include?(:control)
       end
 
       def inspect
         "Node<#{object_id}, #{op}, #{props}>"
+      end
+
+    end
+
+    Edge = Struct.new(:from, :output_name, :to, :input_name)
+
+    class EdgeSet
+
+      attr_reader :edges
+
+      def initialize(edges)
+        @edges = edges
+      end
+
+      def output_names
+        edges.map(&:output_name).uniq
+      end
+
+      def input_names
+        edges.map(&:input_name).uniq
+      end
+
+      def with_output_name(name)
+        EdgeSet.new(edges.select { |e| e.output_name == name })
+      end
+
+      def with_input_name(name)
+        EdgeSet.new(edges.select { |e| e.input_name == name })
+      end
+
+      def nodes
+        (from_nodes + to_nodes).uniq
+      end
+
+      def from_nodes
+        edges.map(&:from).uniq
+      end
+
+      def to_nodes
+        edges.map(&:to).uniq
+      end
+
+      def empty?
+        edges.empty?
       end
 
     end

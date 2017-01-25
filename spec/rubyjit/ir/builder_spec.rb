@@ -31,8 +31,8 @@ module RubyJIT::Fixtures::Builder
     1.upto(flow.size - 1).each do |i|
       n0 = flow[i - 1]
       n1 = flow[i]
-      spec.expect(n0.outputs[:control]).to spec.contain_exactly n1
-      spec.expect(n1.inputs[:control]).to spec.contain_exactly n0
+      spec.expect(n0.outputs.with_output_name(:control).to_nodes).to spec.contain_exactly n1
+      spec.expect(n1.inputs.with_input_name(:control).from_nodes).to spec.contain_exactly n0
     end
 
     spec.expect(last_side_effect).to spec.eql flow.last
@@ -50,8 +50,8 @@ module RubyJIT::Fixtures::Builder
         from, from_name, to, to_name = f
         from = nodes[from] || resolve(graph, from)
         to = nodes[to] || resolve(graph, to)
-        spec.expect(from.outputs[from_name]).to spec.include to
-        spec.expect(to.inputs[to_name]).to spec.include from
+        spec.expect(from.outputs.with_output_name(from_name).to_nodes).to spec.include to
+        spec.expect(to.inputs.with_input_name(to_name).from_nodes).to spec.include from
       else
         raise 'unexpected data flow declaration'
       end
@@ -71,7 +71,7 @@ module RubyJIT::Fixtures::Builder
   def self.pure_nodes_have_no_control(spec, graph)
     graph.visit_nodes do |node|
       if [:arg, :store, :load].include?(node.op)
-        spec.expect(node.outputs[:control]).to spec.be_nil
+        spec.expect(node.outputs.with_output_name(:control)).to spec.be_empty
       end
     end
   end
@@ -420,10 +420,10 @@ describe RubyJIT::IR::Builder do
             self, @graph, @fragment.last_side_effect,
             :region,
             ->(n) { n.op == :trace && n.props[:line] == 35 },
-            ->(n) { n.op == :send && n.props[:name] == :- && n.inputs[:args].first.props[:value] == 1 },
-            ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs[:args].first.inputs[:args].first.props[:value] == 1 },
-            ->(n) { n.op == :send && n.props[:name] == :- && n.inputs[:args].first.props[:value] == 2 },
-            ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs[:args].first.inputs[:args].first.props[:value] == 2 },
+            ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
+            ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(:args).from_nodes.first.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
+            ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 2 },
+            ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(:args).from_nodes.first.inputs.with_input_name(:args).from_nodes.first.props[:value] == 2 },
             ->(n) { n.op == :send && n.props[:name] == :+ }
         )
       end
@@ -433,10 +433,10 @@ describe RubyJIT::IR::Builder do
             self, @graph,
             :const_one, ->(n) { n.op == :constant && n.props[:value] == 1 },
             :const_two, ->(n) { n.op == :constant && n.props[:value] == 2 },
-            :sub_one, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs[:args].first.props[:value] == 1 },
-            :fib_one, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs[:args].first.inputs[:args].first.props[:value] == 1 },
-            :sub_two, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs[:args].first.props[:value] == 2 },
-            :fib_two, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs[:args].first.inputs[:args].first.props[:value] == 2 },
+            :sub_one, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
+            :fib_one, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(:args).from_nodes.first.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
+            :sub_two, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 2 },
+            :fib_two, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(:args).from_nodes.first.inputs.with_input_name(:args).from_nodes.first.props[:value] == 2 },
             :add, ->(n) { n.op == :send && n.props[:name] == :+ },
             [:n, :value, :sub_one, :receiver],
             [:const_one, :value, :sub_one, :args],
