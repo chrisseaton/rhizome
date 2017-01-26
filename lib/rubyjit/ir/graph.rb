@@ -48,6 +48,14 @@ module RubyJIT
         end
       end
 
+      def all_nodes
+        nodes = []
+        visit_nodes do |node|
+          nodes.push node
+        end
+        nodes
+      end
+
       def find_node(op=nil)
         visit_nodes do |node|
           if !op || node.op == op

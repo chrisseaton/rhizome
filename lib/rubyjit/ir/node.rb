@@ -24,10 +24,7 @@ module RubyJIT
 
     class Node
 
-      attr_reader :op
-      attr_reader :props
-      attr_reader :inputs
-      attr_reader :outputs
+      attr_reader :op, :props, :inputs, :outputs
 
       def initialize(op, props={})
         @op = op
@@ -56,7 +53,26 @@ module RubyJIT
 
     end
 
-    Edge = Struct.new(:from, :output_name, :to, :input_name)
+    class Edge
+
+      attr_reader :from, :output_name, :to, :input_name
+
+      def initialize(from, output_name, to, input_name)
+        @from = from
+        @output_name = output_name
+        @to = to
+        @input_name = input_name
+      end
+
+      def names
+        [output_name, input_name]
+      end
+
+      def control?
+        names.include?(:control)
+      end
+
+    end
 
     class EdgeSet
 

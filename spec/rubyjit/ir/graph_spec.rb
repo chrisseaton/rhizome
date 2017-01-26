@@ -78,6 +78,14 @@ describe RubyJIT::IR::Graph do
 
   end
 
+  describe '#all_nodes' do
+
+    it 'returns an array of all nodes' do
+      expect(@add_graph.all_nodes.map(&:op)).to contain_exactly :start, :finish, :constant, :arg, :send
+    end
+
+  end
+
   describe '#find_node' do
 
     it 'can be used to find a single node' do

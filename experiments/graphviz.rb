@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2016-2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,13 +19,14 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/graphviz'
-require 'rubyjit/ir/builder'
+# Prints a simple graph for an add function.
+
+require_relative '../lib/rubyjit'
+require_relative '../spec/rubyjit/fixtures'
+
+builder = RubyJIT::IR::Builder.new
+fragment = builder.basic_block_to_graph({}, [], RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
+graph = RubyJIT::IR::Graph.from_fragment(fragment)
+graphviz = RubyJIT::IR::Graphviz.new(graph)
+
+graphviz.visualise 'add.pdf'

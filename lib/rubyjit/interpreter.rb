@@ -19,9 +19,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# The mechanism that we use to call native functions and access native memory
-# varies by the implementation of Ruby.
-
 module RubyJIT
   
   # An interpreter for RubyJIT bytecode.
