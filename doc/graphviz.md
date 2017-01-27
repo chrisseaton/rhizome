@@ -93,6 +93,10 @@ used with other graphical compilers such as Graal.
 
 [igv]: http://ssw.jku.at/Research/Papers/Wuerthinger07Master/Wuerthinger07Master.pdf
 
+The Turbofan tier of the V8 just-in-time compiler for JavaScript has a
+visualiser called
+[Turbolizer](https://groups.google.com/forum/#!topic/v8-dev/RtB5s6WI6ik).
+
 ### Potential projects
 
 * Output graphs to the IGV API so that a graphical user interface can be used
