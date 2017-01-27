@@ -25,7 +25,7 @@ require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
 builder = RubyJIT::IR::Builder.new
-fragment = builder.basic_block_to_graph({}, [], RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
+fragment = builder.basic_block_to_graph(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
 graph = RubyJIT::IR::Graph.from_fragment(fragment)
 graphviz = RubyJIT::IR::Graphviz.new(graph)
 
