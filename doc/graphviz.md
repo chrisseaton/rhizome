@@ -39,6 +39,10 @@ end
 What all the nodes do and they are connected like this is explained in the
 documents on our intermediate representation (IR) and how we build graphs.
 
+Not demonstrated here are orange edges, which show edges that have connected
+graph fragments (described later on), end edges which will connect graph
+fragments but are currently dangling, which are shown in dashed orange.
+
 ### How it works
 
 Making graphs that look nice automatically is a challenging computer science

@@ -36,10 +36,10 @@ module RubyJIT
         case graph
           when Graph
             @nodes = graph.all_nodes
+            @fragment = false
           when Builder::GraphFragment
-            @nodes = Graph.from_fragment(graph).all_nodes.reject do |n|
-              [:start, :finish].include?(n.op)
-            end
+            @nodes = Graph.from_fragment(graph).all_nodes.reject { |n| n.op == :start }
+            @fragment = true
           else
             raise 'unknown graph type'
         end
@@ -64,7 +64,27 @@ module RubyJIT
         out.puts 'digraph {'
 
         @nodes.each do |node|
-          out.puts "  #{id(node)}[label=\"#{node_label(node)}\"];"
+          attrs = {
+              label: node_label(node)
+          }
+
+          # We don't draw unresolved input nodes - the edges just go into
+          # empty space.
+
+          if node.op == :input && !node.has_input?
+            attrs[:style] = 'invis'
+          end
+
+          # Draw the finish nodes for fragments as 'result' nodes so it's
+          # clear they're from a fragment.
+
+          if node.op == :finish && @fragment
+            attrs[:label] = 'result'
+          end
+
+          attr_s = attrs.reject { |k, v| v.nil? }.map { |k,v| "#{k}=\"#{v}\"" }.join(', ')
+
+          out.puts "  #{id(node)}[#{attr_s}];"
 
           node.outputs.edges.each do |edge|
             attrs = {
@@ -82,9 +102,41 @@ module RubyJIT
               attrs[:dir] = 'back'
             end
 
+            # We draw edges that go to graph fragment input as orange...
+
+            if node.op == :input
+              attrs[:color] = 'orange'
+
+              # ...and dash it if it has not been connected yet.
+
+              attrs[:style] = 'dashed' unless node.has_input?
+            end
+
             attr_s = attrs.reject { |k, v| v.nil? }.map { |k,v| "#{k}=\"#{v}\"" }.join(', ')
 
             out.puts "  #{id(edge.from)} -> #{id(edge.to)}[#{attr_s}];"
+          end
+
+          # If this is a fragment, draw some extra dashed orange lines for
+          # that are missing otherwise.
+
+          case node.op
+            when :region
+              out.puts "  #{id(node)}_in[style=\"\invis\"];"
+              out.puts "  #{id(node)}_in -> #{id(node)}[color=\"orange\",style=\"dashed\"];"
+            when :branch
+              out.puts "  #{id(node)}_target[style=\"\invis\"];"
+              out.puts "  #{id(node)} -> #{id(node)}_target[color=\"orange\",style=\"dashed\"];"
+            when :branchif
+              out.puts "  #{id(node)}_true[style=\"\invis\"];"
+              out.puts "  #{id(node)}_false[style=\"\invis\"];"
+              out.puts "  #{id(node)} -> #{id(node)}_true[color=\"orange\",style=\"dashed\"];"
+              out.puts "  #{id(node)} -> #{id(node)}_false[color=\"orange\",style=\"dashed\"];"
+            when :finish
+              if @fragment
+                out.puts "  #{id(node)}_target[style=\"\invis\"];"
+                out.puts "  #{id(node)} -> #{id(node)}_target[color=\"orange\",style=\"dashed\"];"
+              end
           end
         end
 

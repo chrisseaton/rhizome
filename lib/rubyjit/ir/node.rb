@@ -39,6 +39,10 @@ module RubyJIT
         to.inputs.edges.push edge
       end
 
+      def has_input?
+        not inputs.empty?
+      end
+
       def has_control_input?
         inputs.input_names.include?(:control)
       end
