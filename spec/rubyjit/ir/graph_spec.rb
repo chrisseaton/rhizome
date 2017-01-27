@@ -47,7 +47,7 @@ describe RubyJIT::IR::Graph do
 
     it 'creates a graph from a builder fragment' do
       region = RubyJIT::IR::Node.new(:region)
-      fragment = RubyJIT::IR::Builder::GraphFragment.new(region, region, region, {}, [])
+      fragment = RubyJIT::IR::Builder::GraphFragment.new({}, [], region, region, region, {}, [])
       graph = RubyJIT::IR::Graph.from_fragment(fragment)
       expect(graph.contains? { |node| node.op == :region }).to be_truthy
     end

@@ -35,7 +35,7 @@ describe RubyJIT::IR::Graphviz do
     it 'accepts a graph fragment' do
       region = RubyJIT::IR::Node.new(:region)
       constant = RubyJIT::IR::Node.new(:constant, value: 14)
-      graph_fragment = RubyJIT::IR::Builder::GraphFragment.new(region, region, region, {}, [constant])
+      graph_fragment = RubyJIT::IR::Builder::GraphFragment.new({}, [], region, region, region, {}, [constant])
       RubyJIT::IR::Graphviz.new(graph_fragment)
     end
 
@@ -45,7 +45,7 @@ describe RubyJIT::IR::Graphviz do
     @builder = RubyJIT::IR::Builder.new
     basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
     block = basic_blocks.values[2]
-    @fragment = @builder.basic_block_to_graph({n: RubyJIT::IR::Node.new(:n)}, [], block.insns)
+    @fragment = @builder.basic_block_to_graph(block.insns)
     @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
     @viz = RubyJIT::IR::Graphviz.new(@graph)
     dot = StringIO.new

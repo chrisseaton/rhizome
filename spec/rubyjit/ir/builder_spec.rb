@@ -25,7 +25,7 @@ require_relative '../fixtures'
 
 module RubyJIT::Fixtures::Builder
 
-  def self.control_flows(spec, graph, last_side_effect, *flow)
+  def self.control_flows(spec, graph, last_control, *flow)
     flow = flow.map { |n| resolve(graph, n) }
 
     1.upto(flow.size - 1).each do |i|
@@ -35,7 +35,7 @@ module RubyJIT::Fixtures::Builder
       spec.expect(n1.inputs.with_input_name(:control).from_nodes).to spec.contain_exactly n0
     end
 
-    spec.expect(last_side_effect).to spec.eql flow.last
+    spec.expect(last_control).to spec.eql flow.last
   end
 
   def self.data_flows(spec, graph, *flow)
@@ -223,36 +223,36 @@ describe RubyJIT::IR::Builder do
     describe 'returns a graph fragment' do
 
       it do
-        expect(@builder.basic_block_to_graph({}, [], [])).to be_a(RubyJIT::IR::Builder::GraphFragment)
+        expect(@builder.basic_block_to_graph([])).to be_a(RubyJIT::IR::Builder::GraphFragment)
       end
 
       it 'that has a region node' do
-        region = @builder.basic_block_to_graph({}, [], []).region
+        region = @builder.basic_block_to_graph([]).region
         expect(region).to be_a(RubyJIT::IR::Node)
         expect(region.op).to eql :region
       end
 
       it 'that has a region node' do
-        region = @builder.basic_block_to_graph({}, [], []).region
+        region = @builder.basic_block_to_graph([]).region
         expect(region).to be_a(RubyJIT::IR::Node)
         expect(region.op).to eql :region
       end
 
       it 'that has a last node' do
-        fragment = @builder.basic_block_to_graph({}, [], [])
-        expect(fragment.last_side_effect).to be_a(RubyJIT::IR::Node)
-        expect(fragment.last_side_effect).to eql fragment.region
+        fragment = @builder.basic_block_to_graph([])
+        expect(fragment.last_control).to be_a(RubyJIT::IR::Node)
+        expect(fragment.last_control).to eql fragment.region
       end
 
       it 'that has a last side-effect node' do
-        fragment = @builder.basic_block_to_graph({}, [], [])
-        expect(fragment.last_side_effect).to be_a(RubyJIT::IR::Node)
-        expect(fragment.last_side_effect).to eql fragment.region
+        fragment = @builder.basic_block_to_graph([])
+        expect(fragment.last_control).to be_a(RubyJIT::IR::Node)
+        expect(fragment.last_control).to eql fragment.region
       end
 
       it 'that has a list of the value of nodes at the end' do
         insns = [[:push, 14], [:store, :a]]
-        fragment = @builder.basic_block_to_graph({}, [], insns)
+        fragment = @builder.basic_block_to_graph(insns)
         a = fragment.names_out[:a]
         expect(a.op).to eql :constant
         expect(a.props[:value]).to eql 14
@@ -260,7 +260,7 @@ describe RubyJIT::IR::Builder do
 
       it 'that has a stack of values at the end' do
         insns = [[:push, 14]]
-        fragment = @builder.basic_block_to_graph({}, [], insns)
+        fragment = @builder.basic_block_to_graph(insns)
         expect(fragment.stack_out.size).to eql 1
         a = fragment.stack_out.first
         expect(a.op).to eql :constant
@@ -272,13 +272,21 @@ describe RubyJIT::IR::Builder do
     describe 'correctly builds the single basic block in an add function' do
 
       before :each do
-        @fragment = @builder.basic_block_to_graph({}, [], RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
+        @fragment = @builder.basic_block_to_graph(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
         @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
       end
 
-      it 'with the region, trace and send nodes forming a control flow to the last_side_effect' do
+      it 'not requiring any names' do
+        expect(@fragment.names_in).to be_empty
+      end
+
+      it 'not requiring anything from the stack' do
+        expect(@fragment.stack_in).to be_empty
+      end
+
+      it 'with the region, trace and send nodes forming a control flow to the last_control' do
         RubyJIT::Fixtures::Builder.control_flows(
-            self, @graph, @fragment.last_side_effect,
+            self, @graph, @fragment.last_control,
             :region,
             ->(n) { n.op == :trace && n.props[:line] == 27 },
             ->(n) { n.op == :trace && n.props[:line] == 28 },
@@ -322,13 +330,21 @@ describe RubyJIT::IR::Builder do
       before :each do
         basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
         block = basic_blocks.values[0]
-        @fragment = @builder.basic_block_to_graph({}, [], block.insns)
+        @fragment = @builder.basic_block_to_graph(block.insns)
         @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
       end
 
-      it 'with the region, trace and send nodes forming a control flow to the last_side_effect' do
+      it 'not requiring any names' do
+        expect(@fragment.names_in).to be_empty
+      end
+
+      it 'not requiring anything from the stack' do
+        expect(@fragment.stack_in).to be_empty
+      end
+
+      it 'with the region, trace and send nodes forming a control flow to the last_control' do
         RubyJIT::Fixtures::Builder.control_flows(
-            self, @graph, @fragment.last_side_effect,
+            self, @graph, @fragment.last_control,
             :region,
             ->(n) { n.op == :trace && n.props[:line] == 31 },
             ->(n) { n.op == :trace && n.props[:line] == 32 },
@@ -369,13 +385,23 @@ describe RubyJIT::IR::Builder do
       before :each do
         basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
         block = basic_blocks.values[1]
-        @fragment = @builder.basic_block_to_graph({n: RubyJIT::IR::Node.new(:n)}, [], block.insns)
+        @fragment = @builder.basic_block_to_graph(block.insns)
         @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
       end
 
-      it 'with the region and trace nodes forming a control flow to the last_side_effect' do
+      it 'requiring a name' do
+        expect(@fragment.names_in.size).to eql 1
+        expect(@fragment.names_in.keys.first).to eql :n
+        expect(@fragment.names_in.values.first.op).to eql :input
+      end
+
+      it 'not requiring anything from the stack' do
+        expect(@fragment.stack_in).to be_empty
+      end
+
+      it 'with the region and trace nodes forming a control flow to the last_control' do
         RubyJIT::Fixtures::Builder.control_flows(
-            self, @graph, @fragment.last_side_effect,
+            self, @graph, @fragment.last_control,
             :region,
             ->(n) { n.op == :trace && n.props[:line] == 33 }
         )
@@ -401,7 +427,7 @@ describe RubyJIT::IR::Builder do
 
       it 'with the argument value on the stack' do
         expect(@fragment.stack_out.size).to eql 1
-        expect(@fragment.stack_out.first.op).to eql :n
+        expect(@fragment.stack_out.first).to eql @fragment.names_in.values.first
       end
 
     end
@@ -411,13 +437,23 @@ describe RubyJIT::IR::Builder do
       before :each do
         basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
         block = basic_blocks.values[2]
-        @fragment = @builder.basic_block_to_graph({n: RubyJIT::IR::Node.new(:n)}, [], block.insns)
+        @fragment = @builder.basic_block_to_graph(block.insns)
         @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
       end
 
-      it 'with the region, trace and send nodes forming a control flow to the last_side_effect' do
+      it 'requiring a name' do
+        expect(@fragment.names_in.size).to eql 1
+        expect(@fragment.names_in.keys.first).to eql :n
+        expect(@fragment.names_in.values.first.op).to eql :input
+      end
+
+      it 'not requiring anything from the stack' do
+        expect(@fragment.stack_in).to be_empty
+      end
+
+      it 'with the region, trace and send nodes forming a control flow to the last_control' do
         RubyJIT::Fixtures::Builder.control_flows(
-            self, @graph, @fragment.last_side_effect,
+            self, @graph, @fragment.last_control,
             :region,
             ->(n) { n.op == :trace && n.props[:line] == 35 },
             ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
@@ -438,9 +474,9 @@ describe RubyJIT::IR::Builder do
             :sub_two, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 2 },
             :fib_two, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(:args).from_nodes.first.inputs.with_input_name(:args).from_nodes.first.props[:value] == 2 },
             :add, ->(n) { n.op == :send && n.props[:name] == :+ },
-            [:n, :value, :sub_one, :receiver],
+            [:input, :value, :sub_one, :receiver],
             [:const_one, :value, :sub_one, :args],
-            [:n, :value, :sub_two, :receiver],
+            [:input, :value, :sub_two, :receiver],
             [:const_two, :value, :sub_two, :args],
             [:sub_one, :value, :fib_one, :args],
             [:sub_two, :value, :fib_two, :args],
@@ -474,22 +510,31 @@ describe RubyJIT::IR::Builder do
       before :each do
         basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
         block = basic_blocks.values[3]
-        @fragment = @builder.basic_block_to_graph({n: RubyJIT::IR::Node.new(:n)}, [RubyJIT::IR::Node.new(:stack)], block.insns)
+        @fragment = @builder.basic_block_to_graph(block.insns)
         @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
       end
 
-      it 'with the region, trace, and return nodes forming a control flow to the last_side_effect' do
+      it 'not requiring any names' do
+        expect(@fragment.names_in).to be_empty
+      end
+
+      it 'requiring one value from the stack' do
+        expect(@fragment.stack_in.size).to eql 1
+        expect(@fragment.stack_in.first.op).to eql :input
+      end
+
+      it 'with the region, trace, and return nodes forming a control flow to the last_control' do
         RubyJIT::Fixtures::Builder.control_flows(
-            self, @graph, @fragment.last_side_effect,
+            self, @graph, @fragment.last_control,
             :region,
             ->(n) { n.op == :trace && n.props[:line] == 37 }
         )
       end
 
-      it 'with data flowing from the value on the stack to the finsih' do
+      it 'with data flowing from the value on the stack to the finish' do
         RubyJIT::Fixtures::Builder.data_flows(
             self, @graph,
-            [:stack, :value, :finish, :value]
+            [:input, :value, :finish, :value]
         )
       end
 
@@ -501,13 +546,13 @@ describe RubyJIT::IR::Builder do
         RubyJIT::Fixtures::Builder.nodes_output_control_iff_input_control self, @graph
       end
 
-      it 'with n as a name' do
-        expect(@fragment.names_out.keys).to contain_exactly :n
+      it 'with no names' do
+        expect(@fragment.names_out).to be_empty
       end
 
       it 'with the returned value on the stack' do
         expect(@fragment.stack_out.size).to eql 1
-        expect(@fragment.stack_out.first.op).to eql :stack
+        expect(@fragment.stack_out.first.op).to eql :input
       end
 
     end

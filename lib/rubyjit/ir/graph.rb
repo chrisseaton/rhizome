@@ -81,7 +81,7 @@ module RubyJIT
       def self.from_fragment(fragment)
         graph = RubyJIT::IR::Graph.new
         graph.start.output_to :control, fragment.region
-        fragment.last_side_effect.output_to :control, graph.finish
+        fragment.last_control.output_to :control, graph.finish
         fragment.last_node.output_to :value, graph.finish
         graph
       end

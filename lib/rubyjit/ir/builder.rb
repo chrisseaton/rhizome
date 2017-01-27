@@ -81,15 +81,26 @@ module RubyJIT
         blocks
       end
 
-      GraphFragment = Struct.new(:region, :last_node, :last_side_effect, :names_out, :stack_out)
+      GraphFragment = Struct.new(:names_in, :stack_in, :region, :last_node, :last_control, :names_out, :stack_out)
 
-      def basic_block_to_graph(names_in, stack_in, insns)
+      def basic_block_to_graph(insns)
         region = Node.new(:region)
+        names_in = {}
+        stack_in = []
         last_node = nil
-        last_side_effect = region
+        last_control = region
+        names = {}
+        stack = []
 
-        names = names_in.dup
-        stack = stack_in.dup
+        pop = proc {
+          if stack.empty?
+            input = Node.new(:input)
+            stack_in.unshift input
+            input
+          else
+            stack.pop
+          end
+        }
 
         insns.each do |insn|
           case insn.first
@@ -102,9 +113,17 @@ module RubyJIT
               last_node = Node.new(:arg, n: insn[1])
               stack.push last_node
             when :load
-              stack.push names[insn[1]]
+              name = insn[1]
+              value = names[name]
+              unless value
+                input = Node.new(:input)
+                names_in[name] = input
+                names[name] = input
+                value = input
+              end
+              stack.push value
             when :store
-              names[insn[1]] = stack.pop
+              names[insn[1]] = pop.call
             when :push
               last_node = Node.new(:constant, value: insn[1])
               stack.push last_node
@@ -113,15 +132,15 @@ module RubyJIT
               argc = insn[2]
               send_node = Node.new(:send, name: name)
               argc.times do
-                arg_node = stack.pop
+                arg_node = pop.call
                 arg_node.output_to :value, send_node, :args
               end
-              receiver_node = stack.pop
+              receiver_node = pop.call
               receiver_node.output_to :value, send_node, :receiver
               stack.push send_node
               last_node = send_node
             when :not
-              value_node = stack.pop
+              value_node = pop.call
               not_node = Node.new(:not)
               value_node.output_to :value, not_node
               stack.push not_node
@@ -130,23 +149,24 @@ module RubyJIT
               branch_node = Node.new(:branch)
               last_node = branch_node
             when :branchif
-              value_node = stack.pop
+              value_node = pop.call
               branchif_node = Node.new(:branchif)
               value_node.output_to :value, branchif_node, :condition
               last_node = branchif_node
             when :return
-              last_node = stack.last
+              last_node = pop.call
+              stack.push last_node
             else
               raise 'unknown instruction'
           end
 
           if [:trace, :send].include?(insn.first)
-            last_side_effect.output_to :control, last_node
-            last_side_effect = last_node
+            last_control.output_to :control, last_node
+            last_control = last_node
           end
         end
 
-        GraphFragment.new(region, last_node, last_side_effect, names, stack)
+        GraphFragment.new(names_in, stack_in, region, last_node, last_control, names, stack)
       end
 
     end
