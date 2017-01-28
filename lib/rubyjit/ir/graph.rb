@@ -24,18 +24,32 @@ require 'set'
 module RubyJIT
   module IR
 
+    # A graph is a data structure to represent Ruby code as it is optimised
+    # and compiled to machine code.
+
     class Graph
+
+      # Graphs have start and finish nodes. These are the handles that we keep
+      # hold of to be able to access any of the nodes.
 
       attr_reader :start
       attr_reader :finish
 
       def initialize
+        # Create the start and finish nodes and say that the start node has to
+        # run before the finish node by creating a control edge between them.
+
         @start = Node.new(:start)
         @finish = Node.new(:finish)
         start.output_to(:control, finish)
       end
 
+      # Yield to a block for each node in the graph.
+
       def visit_nodes
+        # Run a depth-first traversal of the graph with a worklist and a
+        # visited set.
+
         worklist = [@start]
         visited = Set.new
         until worklist.empty?
@@ -48,6 +62,10 @@ module RubyJIT
         end
       end
 
+      # Get a simple array of all nodes in the graph. Useful when you will be
+      # mutating the graph and so don't want the traversal running at the same
+      # time as your mutation.
+
       def all_nodes
         nodes = []
         visit_nodes do |node|
@@ -55,6 +73,9 @@ module RubyJIT
         end
         nodes
       end
+
+      # Find a node that meets a condition - either a block or a simple
+      # comparison by the operation name.
 
       def find_node(op=nil)
         visit_nodes do |node|
@@ -66,9 +87,13 @@ module RubyJIT
         end
       end
 
+      # Is there a node which meets a condition?
+
       def contains?(&block)
         not find_node(&block).nil?
       end
+
+      # How many nodes are there in the graph?
 
       def size
         count = 0
@@ -77,6 +102,10 @@ module RubyJIT
         end
         count
       end
+
+      # Create a graph from a fragment. It may not still be fully connected,
+      # but at least it will be a proper graph object which you can pass into
+      # interfaces wanting that.
 
       def self.from_fragment(fragment)
         graph = RubyJIT::IR::Graph.new

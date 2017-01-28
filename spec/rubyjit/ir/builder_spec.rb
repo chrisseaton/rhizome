@@ -25,6 +25,15 @@ require_relative '../fixtures'
 
 module RubyJIT::Fixtures::Builder
 
+  # It's tedious write lots of specs that check that a graph has been built
+  # correctly, looking at each node and checking that it is connected as we'd
+  # expect it to be, so we have these two kind-of-DSLs that help us do it.
+
+  # Check that control flows through the nodes in a graph in a defined way.
+  # The flow parameter is a splatted list of expressions that can be used
+  # to find the nodes that we expect to be the order of control flow.
+  # Expressions are parsed using the resolve method, below.
+
   def self.control_flows(spec, graph, last_control, *flow)
     flow = flow.map { |n| resolve(graph, n) }
 
@@ -37,6 +46,12 @@ module RubyJIT::Fixtures::Builder
 
     spec.expect(last_control).to spec.eql flow.last
   end
+
+  # Check that data flows through the nodes in the graph in a defined way.
+  # This is more complex than control flow, as control flow within a basic
+  # block is linear, but data flow is a graph. Each expression then is
+  # therefore a from node, an output name, a to node, and an input name,
+  # with the nodes being resolved using the resolve method below.
 
   def self.data_flows(spec, graph, *flow)
     flow = flow.dup
@@ -58,6 +73,8 @@ module RubyJIT::Fixtures::Builder
     end
   end
 
+  # Takes either an operation name, or a proc to run to find a node.
+
   def self.resolve(graph, description)
     if description.is_a?(Symbol)
       graph.find_node(description)
@@ -68,6 +85,8 @@ module RubyJIT::Fixtures::Builder
     end
   end
 
+  # Check that nodes that should be pure do indeed have no control edges.
+
   def self.pure_nodes_have_no_control(spec, graph)
     graph.visit_nodes do |node|
       if [:arg, :store, :load].include?(node.op)
@@ -75,6 +94,8 @@ module RubyJIT::Fixtures::Builder
       end
     end
   end
+
+  # Check that nodes only output control if and only if they input it as well.
 
   def self.nodes_output_control_iff_input_control(spec, graph)
     graph.visit_nodes do |node|
@@ -253,36 +274,36 @@ describe RubyJIT::IR::Builder do
     describe 'returns a graph fragment' do
 
       it do
-        expect(@builder.basic_block_to_graph([])).to be_a(RubyJIT::IR::Builder::GraphFragment)
+        expect(@builder.basic_block_to_fragment([])).to be_a(RubyJIT::IR::Builder::GraphFragment)
       end
 
       it 'that has a region node' do
-        region = @builder.basic_block_to_graph([]).region
+        region = @builder.basic_block_to_fragment([]).region
         expect(region).to be_a(RubyJIT::IR::Node)
         expect(region.op).to eql :region
       end
 
       it 'that has a region node' do
-        region = @builder.basic_block_to_graph([]).region
+        region = @builder.basic_block_to_fragment([]).region
         expect(region).to be_a(RubyJIT::IR::Node)
         expect(region.op).to eql :region
       end
 
       it 'that has a last node' do
-        fragment = @builder.basic_block_to_graph([])
+        fragment = @builder.basic_block_to_fragment([])
         expect(fragment.last_control).to be_a(RubyJIT::IR::Node)
         expect(fragment.last_control).to eql fragment.region
       end
 
       it 'that has a last side-effect node' do
-        fragment = @builder.basic_block_to_graph([])
+        fragment = @builder.basic_block_to_fragment([])
         expect(fragment.last_control).to be_a(RubyJIT::IR::Node)
         expect(fragment.last_control).to eql fragment.region
       end
 
       it 'that has a list of the value of nodes at the end' do
         insns = [[:push, 14], [:store, :a]]
-        fragment = @builder.basic_block_to_graph(insns)
+        fragment = @builder.basic_block_to_fragment(insns)
         a = fragment.names_out[:a]
         expect(a.op).to eql :constant
         expect(a.props[:value]).to eql 14
@@ -290,7 +311,7 @@ describe RubyJIT::IR::Builder do
 
       it 'that has a stack of values at the end' do
         insns = [[:push, 14]]
-        fragment = @builder.basic_block_to_graph(insns)
+        fragment = @builder.basic_block_to_fragment(insns)
         expect(fragment.stack_out.size).to eql 1
         a = fragment.stack_out.first
         expect(a.op).to eql :constant
@@ -302,7 +323,7 @@ describe RubyJIT::IR::Builder do
     describe 'correctly builds the single basic block in an add function' do
 
       before :each do
-        @fragment = @builder.basic_block_to_graph(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
+        @fragment = @builder.basic_block_to_fragment(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
         @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
       end
 
@@ -360,7 +381,7 @@ describe RubyJIT::IR::Builder do
       before :each do
         basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
         block = basic_blocks.values[0]
-        @fragment = @builder.basic_block_to_graph(block.insns)
+        @fragment = @builder.basic_block_to_fragment(block.insns)
         @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
       end
 
@@ -416,7 +437,7 @@ describe RubyJIT::IR::Builder do
       before :each do
         basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
         block = basic_blocks.values[1]
-        @fragment = @builder.basic_block_to_graph(block.insns)
+        @fragment = @builder.basic_block_to_fragment(block.insns)
         @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
       end
 
@@ -469,7 +490,7 @@ describe RubyJIT::IR::Builder do
       before :each do
         basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
         block = basic_blocks.values[2]
-        @fragment = @builder.basic_block_to_graph(block.insns)
+        @fragment = @builder.basic_block_to_fragment(block.insns)
         @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
       end
 
@@ -542,7 +563,7 @@ describe RubyJIT::IR::Builder do
       before :each do
         basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
         block = basic_blocks.values[3]
-        @fragment = @builder.basic_block_to_graph(block.insns)
+        @fragment = @builder.basic_block_to_fragment(block.insns)
         @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
       end
 

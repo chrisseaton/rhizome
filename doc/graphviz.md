@@ -40,8 +40,9 @@ What all the nodes do and they are connected like this is explained in the
 documents on our intermediate representation (IR) and how we build graphs.
 
 Not demonstrated here are orange edges, which show edges that have connected
-graph fragments (described later on), end edges which will connect graph
-fragments but are currently dangling, which are shown in dashed orange.
+graph fragments (described later on), edges which will connect graph fragments
+but are currently dangling, which are shown in dashed orange, and edges which
+connect phi nodes to their regions, which are shown in dashed blue.
 
 ### How it works
 

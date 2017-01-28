@@ -32,7 +32,7 @@ basic_blocks.each_value do |block|
   block.insns.each do |insn|
     p insn
   end
-  fragment = builder.basic_block_to_graph(block.insns)
+  fragment = builder.basic_block_to_fragment(block.insns)
   viz = RubyJIT::IR::Graphviz.new(fragment)
   viz.visualise "block#{block.start}.pdf"
 end

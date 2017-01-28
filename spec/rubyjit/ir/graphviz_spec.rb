@@ -45,7 +45,7 @@ describe RubyJIT::IR::Graphviz do
     @builder = RubyJIT::IR::Builder.new
     basic_blocks = @builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
     block = basic_blocks.values[2]
-    @fragment = @builder.basic_block_to_graph(block.insns)
+    @fragment = @builder.basic_block_to_fragment(block.insns)
     @graph = RubyJIT::IR::Graph.from_fragment(@fragment)
     @viz = RubyJIT::IR::Graphviz.new(@graph)
     dot = StringIO.new
