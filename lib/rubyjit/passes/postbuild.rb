@@ -19,32 +19,30 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# Illustrates the process of constructing a graph from a fib function.
+module RubyJIT
+  module Passes
 
-require_relative '../lib/rubyjit'
-require_relative '../spec/rubyjit/fixtures'
+    class PostBuild
 
-builder = RubyJIT::IR::Builder.new
-basic_blocks = builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
+      def run(graph)
+        graph.all_nodes.each do |n|
+          if [:branch, :input].include?(n.op)
+            raise unless n.inputs.size == 1
+            input = n.inputs.edges.first.from
 
-basic_blocks.each_value do |block|
-  puts "Basic block #{block.start}:"
-  block.insns.each do |insn|
-    p insn
+            n.outputs.edges.each do |output|
+              input.output_to output.output_name, output.to, output.input_name
+              output.to.inputs.edges.reject! { |input| input.from == n }
+            end
+
+            n.inputs.edges.each do |input|
+              input.from.outputs.edges.reject! { |output| output.to == n }
+            end
+          end
+        end
+      end
+
+    end
+
   end
-  fragment = builder.basic_block_to_graph(block.insns)
-  viz = RubyJIT::IR::Graphviz.new(fragment)
-  viz.visualise "block#{block.start}.pdf"
 end
-
-builder = RubyJIT::IR::Builder.new
-builder.build(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
-graph = builder.graph
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'built.pdf'
-
-postbuild = RubyJIT::Passes::PostBuild.new
-postbuild.run(graph)
-
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'post.pdf'

@@ -118,6 +118,10 @@ module RubyJIT
         edges.empty?
       end
 
+      def size
+        edges.size
+      end
+
     end
 
   end
