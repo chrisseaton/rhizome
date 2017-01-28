@@ -89,8 +89,8 @@ module RubyJIT
 
       # Is there a node which meets a condition?
 
-      def contains?(&block)
-        not find_node(&block).nil?
+      def contains?(op=nil, &block)
+        not find_node(op, &block).nil?
       end
 
       # How many nodes are there in the graph?
