@@ -113,6 +113,19 @@ describe RubyJIT::IR::Builder do
 
     end
 
+    describe 'builds a fib function' do
+
+      before :each do
+        @builder.build(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
+        @graph = @builder.graph
+      end
+
+      it 'with a five send nodes' do
+        expect(@graph.all_nodes.count { |n| n.op == :send }).to eql 6
+      end
+
+    end
+
   end
 
   describe '#targets' do
