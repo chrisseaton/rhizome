@@ -112,6 +112,12 @@ module RubyJIT
               attrs[:style] = 'dashed' unless node.has_input?
             end
 
+            # The edge from the region to a phi is dashed.
+
+            if node.op == :region && edge.to.op == :phi
+              attrs[:style] = 'dashed'
+            end
+
             attr_s = attrs.reject { |k, v| v.nil? }.map { |k,v| "#{k}=\"#{v}\"" }.join(', ')
 
             out.puts "  #{id(edge.from)} -> #{id(edge.to)}[#{attr_s}];"
@@ -120,23 +126,23 @@ module RubyJIT
           # If this is a fragment, draw some extra dashed orange lines for
           # that are missing otherwise.
 
-          case node.op
-            when :region
-              out.puts "  #{id(node)}_in[style=\"\invis\"];"
-              out.puts "  #{id(node)}_in -> #{id(node)}[color=\"orange\",style=\"dashed\"];"
-            when :branch
-              out.puts "  #{id(node)}_target[style=\"\invis\"];"
-              out.puts "  #{id(node)} -> #{id(node)}_target[color=\"orange\",style=\"dashed\"];"
-            when :branchif
-              out.puts "  #{id(node)}_true[style=\"\invis\"];"
-              out.puts "  #{id(node)}_false[style=\"\invis\"];"
-              out.puts "  #{id(node)} -> #{id(node)}_true[color=\"orange\",style=\"dashed\"];"
-              out.puts "  #{id(node)} -> #{id(node)}_false[color=\"orange\",style=\"dashed\"];"
-            when :finish
-              if @fragment
+          if @fragment
+            case node.op
+              when :region
+                out.puts "  #{id(node)}_in[style=\"\invis\"];"
+                out.puts "  #{id(node)}_in -> #{id(node)}[color=\"orange\",style=\"dashed\"];"
+              when :branch
                 out.puts "  #{id(node)}_target[style=\"\invis\"];"
                 out.puts "  #{id(node)} -> #{id(node)}_target[color=\"orange\",style=\"dashed\"];"
-              end
+              when :branchif
+                out.puts "  #{id(node)}_true[style=\"\invis\"];"
+                out.puts "  #{id(node)}_false[style=\"\invis\"];"
+                out.puts "  #{id(node)} -> #{id(node)}_true[color=\"orange\",style=\"dashed\"];"
+                out.puts "  #{id(node)} -> #{id(node)}_false[color=\"orange\",style=\"dashed\"];"
+              when :finish
+                out.puts "  #{id(node)}_target[style=\"\invis\"];"
+                out.puts "  #{id(node)} -> #{id(node)}_target[color=\"orange\",style=\"dashed\"];"
+            end
           end
         end
 

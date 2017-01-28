@@ -36,3 +36,8 @@ basic_blocks.each_value do |block|
   viz = RubyJIT::IR::Graphviz.new(fragment)
   viz.visualise "block#{block.start}.pdf"
 end
+
+builder = RubyJIT::IR::Builder.new
+builder.build(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
+viz = RubyJIT::IR::Graphviz.new(builder.graph)
+viz.visualise 'built.pdf'

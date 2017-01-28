@@ -32,6 +32,67 @@ module RubyJIT
         @graph = Graph.new
       end
 
+      def build(insns)
+        blocks = basic_blocks(insns)
+
+        fragments = {}
+
+        blocks.each_value do |block|
+          fragments[block.start] = basic_block_to_graph(block.insns)
+        end
+
+        blocks.each_value do |block|
+          fragment = fragments[block.start]
+
+          if block.prev.empty?
+            @graph.start.output_to :control, fragment.region
+          elsif block.prev.size == 1
+            prev = block.prev.first
+            prev_fragment = fragments[prev]
+
+            fragment.names_in.each do |name, input|
+              prev_fragment.names_out[name].output_to :value, input
+            end
+
+            fragment.stack_in.each_with_index do |input, index|
+              raise 'unsupported'
+            end
+          else
+            fragment.names_in.each do |name, input|
+              raise 'unsupported'
+            end
+
+            fragment.stack_in.each_with_index do |input, index|
+              phi = Node.new(:phi)
+              fragment.region.output_to :value, phi
+
+              block.prev.each do |prev|
+                prev_fragment = fragments[prev]
+                prev_fragment.stack_out[index].output_to :value, phi
+              end
+
+              phi.output_to :value, input
+            end
+          end
+
+          if block.next.empty?
+            fragment.last_control.output_to :control, @graph.finish
+            fragment.last_node.output_to :value, @graph.finish
+          elsif block.next.size == 1
+            next_i = block.next.first
+            next_fragment = fragments[next_i]
+
+            fragment.last_control.output_to :control, next_fragment.region
+          elsif fragment.last_control.op == :branchif
+            raise unless block.next.size == 2
+            fragment.last_control.output_to :true, fragments[block.next[0]].region, :control
+            fragment.last_control.output_to :false, fragments[block.next[1]].region, :control
+          else
+            raise 'unsupported'
+          end
+        end
+      end
+
       def targets(insns)
         targets = Set.new
 
@@ -160,7 +221,9 @@ module RubyJIT
               raise 'unknown instruction'
           end
 
-          if [:trace, :send].include?(insn.first)
+          # branch and branchif aren't really side effects...
+
+          if [:trace, :send, :branch, :branchif].include?(insn.first)
             last_control.output_to :control, last_node
             last_control = last_node
           end

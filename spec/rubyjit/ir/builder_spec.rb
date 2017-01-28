@@ -98,6 +98,23 @@ describe RubyJIT::IR::Builder do
 
   end
 
+  describe '#build' do
+
+    describe 'builds an add function' do
+
+      before :each do
+        @builder.build(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
+        @graph = @builder.graph
+      end
+
+      it 'with a single send node' do
+        expect(@graph.all_nodes.count { |n| n.op == :send }).to eql 1
+      end
+
+    end
+
+  end
+
   describe '#targets' do
 
     it 'returns an empty array for no instructions' do
@@ -348,7 +365,8 @@ describe RubyJIT::IR::Builder do
             :region,
             ->(n) { n.op == :trace && n.props[:line] == 31 },
             ->(n) { n.op == :trace && n.props[:line] == 32 },
-            :send
+            :send,
+            :branchif
         )
       end
 
@@ -403,7 +421,8 @@ describe RubyJIT::IR::Builder do
         RubyJIT::Fixtures::Builder.control_flows(
             self, @graph, @fragment.last_control,
             :region,
-            ->(n) { n.op == :trace && n.props[:line] == 33 }
+            ->(n) { n.op == :trace && n.props[:line] == 33 },
+            :branch
         )
       end
 
