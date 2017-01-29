@@ -38,13 +38,13 @@ basic_blocks.each_value do |block|
 end
 
 builder = RubyJIT::IR::Builder.new
-builder.build(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
+builder.build RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT
 graph = builder.graph
 viz = RubyJIT::IR::Graphviz.new(graph)
 viz.visualise 'built.pdf'
 
 postbuild = RubyJIT::Passes::PostBuild.new
-postbuild.run(graph)
+postbuild.run graph
 
 viz = RubyJIT::IR::Graphviz.new(graph)
 viz.visualise 'post.pdf'
