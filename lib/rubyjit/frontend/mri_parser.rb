@@ -70,7 +70,7 @@ module RubyJIT
               insns.push [:self]
             when /(\d+)\s+getlocal_OP__WC__0\s+(\d+)/
               insns.push [:load, locals[argc + size - $2.to_i]]
-            when /(\d+)\s+putobject\s+(\d+)/
+            when /(\d+)\s+putobject\s+(-?\d+)/
               insns.push [:push, $2.to_i]
             when /(\d+)\s+putobject_OP_INT2FIX_O_(\d+)_C_/
               insns.push [:push, $2.to_i]
