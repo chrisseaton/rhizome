@@ -36,9 +36,9 @@ module RubyJIT
           # Remove jump and input nodes, as after construction both of these
           # are just going to sit on edges with one input and one output, and
           # we might as well directly connect the nodes that they are between.
-          # Also remove regions that have only one control input.
+          # Also remove merges that have only one control input.
 
-          if [:jump, :input].include?(n.op) || (n.op == :region && n.outputs.size == 1)
+          if [:jump, :input].include?(n.op) || (n.op == :merge && n.outputs.size == 1)
             # For each input edge...
 
             n.inputs.edges.each do |input|

@@ -33,9 +33,9 @@ describe RubyJIT::IR::Graphviz do
     end
 
     it 'accepts a graph fragment' do
-      region = RubyJIT::IR::Node.new(:region)
+      merge = RubyJIT::IR::Node.new(:merge)
       constant = RubyJIT::IR::Node.new(:constant, value: 14)
-      graph_fragment = RubyJIT::IR::Builder::GraphFragment.new({}, [], region, region, region, {}, [constant])
+      graph_fragment = RubyJIT::IR::Builder::GraphFragment.new({}, [], merge, merge, merge, {}, [constant])
       RubyJIT::IR::Graphviz.new(graph_fragment)
     end
 

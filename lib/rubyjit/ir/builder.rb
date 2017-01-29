@@ -58,7 +58,7 @@ module RubyJIT
             # If the block has no previous blocks, connect the start of the
             # graph to it.
 
-            @graph.start.output_to :control, fragment.region
+            @graph.start.output_to :control, fragment.merge
           elsif block.prev.size == 1
             # If the block has a single previous block, simply connect all
             # the names and stack values from that block to this one.
@@ -85,12 +85,12 @@ module RubyJIT
             # values coming in for names or the stack. For each value that
             # comes in we join all the possible values in a phi node. The phi
             # node works as a switch to choose the correct value. It takes
-            # input from the region which starts this block, to tell it
+            # input from the merge which starts this block, to tell it
             # which way to switch.
 
             fragment.names_in.each do |name, input|
               phi = Node.new(:phi)
-              fragment.region.output_to :value, phi
+              fragment.merge.output_to :value, phi
 
               block.prev.each do |prev|
                 prev_fragment = fragments[prev]
@@ -102,7 +102,7 @@ module RubyJIT
 
             fragment.stack_in.each_with_index do |input, index|
               phi = Node.new(:phi)
-              fragment.region.output_to :value, phi
+              fragment.merge.output_to :value, phi
 
               block.prev.each do |prev|
                 prev_fragment = fragments[prev]
@@ -121,12 +121,12 @@ module RubyJIT
             fragment.last_node.output_to :value, @graph.finish
           elsif block.next.size == 1
             # If the block has a single next block, connect the last control
-            # node of this block to the region node of the next block.
+            # node of this block to the merge node of the next block.
 
             next_i = block.next.first
             next_fragment = fragments[next_i]
 
-            fragment.last_control.output_to :control, next_fragment.region
+            fragment.last_control.output_to :control, next_fragment.merge
           elsif fragment.last_control.op == :branch
             # If the block ends with a branch then it goes to two possible next
             # blocks. The branch node outputs two control edges, one labelled
@@ -134,8 +134,8 @@ module RubyJIT
             # forks like this.
 
             raise unless block.next.size == 2
-            fragment.last_control.output_to :true, fragments[block.next[0]].region, :control
-            fragment.last_control.output_to :false, fragments[block.next[1]].region, :control
+            fragment.last_control.output_to :true, fragments[block.next[0]].merge, :control
+            fragment.last_control.output_to :false, fragments[block.next[1]].merge, :control
           else
             raise 'unsupported'
           end
@@ -229,19 +229,19 @@ module RubyJIT
       end
 
       # A graph fragment is some nodes that don't yet form a complete graph.
-      # As well as the first node (always a region node) and the last value
+      # As well as the first node (always a merge node) and the last value
       # and last control node, we also store the unconnected parts of the
       # fragment - the names and stack values that come into this fragment,
       # and those that come out of this fragment.
 
-      GraphFragment = Struct.new(:names_in, :stack_in, :region, :last_node, :last_control, :names_out, :stack_out)
+      GraphFragment = Struct.new(:names_in, :stack_in, :merge, :last_node, :last_control, :names_out, :stack_out)
 
       # Convert one basic block to a fragment of graph.
 
       def basic_block_to_fragment(insns)
-        # Basic blocks start with a region node.
+        # Basic blocks start with a merge node.
 
-        region = Node.new(:region)
+        merge = Node.new(:merge)
 
         # We're going to build up a list of names and stack values coming into
         # this basic block that we're going to need to connect up later when
@@ -251,7 +251,7 @@ module RubyJIT
         stack_in = []
 
         last_node = nil
-        last_control = region
+        last_control = merge
 
         # We're also going to build up a list of names and stack values that
         # are available when this basic block is finished.
@@ -365,7 +365,7 @@ module RubyJIT
           end
         end
 
-        GraphFragment.new(names_in, stack_in, region, last_node, last_control, names, stack)
+        GraphFragment.new(names_in, stack_in, merge, last_node, last_control, names, stack)
       end
 
     end

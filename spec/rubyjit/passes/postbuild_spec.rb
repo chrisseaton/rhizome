@@ -48,21 +48,21 @@ describe RubyJIT::Passes::PostBuild do
       expect(@graph.contains?(:input)).to be_falsey
     end
 
-    it 'removes region nodes that do not merge' do
-      region = RubyJIT::IR::Node.new(:region)
-      @graph.start.output_to :control, region
-      region.output_to :control, @graph.finish
-      expect(@graph.contains?(:region)).to be_truthy
+    it 'removes merge nodes that do not merge' do
+      merge = RubyJIT::IR::Node.new(:merge)
+      @graph.start.output_to :control, merge
+      merge.output_to :control, @graph.finish
+      expect(@graph.contains?(:merge)).to be_truthy
       @pass.run @graph
-      expect(@graph.contains?(:region)).to be_falsey
+      expect(@graph.contains?(:merge)).to be_falsey
     end
 
-    it 'does not remove region nodes that merge' do
-      a = RubyJIT::IR::Node.new(:region)
+    it 'does not remove merge nodes that merge' do
+      a = RubyJIT::IR::Node.new(:merge)
       @graph.start.output_to :control, a
-      b = RubyJIT::IR::Node.new(:region)
+      b = RubyJIT::IR::Node.new(:merge)
       @graph.start.output_to :control, b
-      merge = RubyJIT::IR::Node.new(:region)
+      merge = RubyJIT::IR::Node.new(:merge)
       a.output_to :control, merge
       b.output_to :control, merge
       expect(@graph.contains? { |n| n == merge }).to be_truthy

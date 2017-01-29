@@ -112,9 +112,9 @@ module RubyJIT
               attrs[:style] = 'dashed' unless node.has_input?
             end
 
-            # The edge from the region to a phi is dashed.
+            # The edge from the merge to a phi is dashed.
 
-            if node.op == :region && edge.to.op == :phi
+            if node.op == :merge && edge.to.op == :phi
               attrs[:style] = 'dashed'
             end
 
@@ -128,7 +128,7 @@ module RubyJIT
 
           if @fragment
             case node.op
-              when :region
+              when :merge
                 out.puts "  #{id(node)}_in[style=\"\invis\"];"
                 out.puts "  #{id(node)}_in -> #{id(node)}[color=\"orange\",style=\"dashed\"];"
               when :jump

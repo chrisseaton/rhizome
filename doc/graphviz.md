@@ -42,7 +42,7 @@ documents on our intermediate representation (IR) and how we build graphs.
 Not demonstrated here are orange edges, which show edges that have connected
 graph fragments (described later on), edges which will connect graph fragments
 but are currently dangling, which are shown in dashed orange, and edges which
-connect phi nodes to their regions, which are shown in dashed blue.
+connect phi nodes to their merges, which are shown in dashed blue.
 
 ### How it works
 
@@ -61,7 +61,7 @@ digraph {
   node70172598584460[label="start"];
   node70172598584460 -> node70172598584340[color="red"];
   node70172598584460 -> node70172598585720[color="red"];
-  node70172598585720[label="region"];
+  node70172598585720[label="merge"];
   node70172598585720 -> node70172598585220[color="red"];
   node70172598585220[label="trace(27)"];
   node70172598585220 -> node70172598585060[color="red"];

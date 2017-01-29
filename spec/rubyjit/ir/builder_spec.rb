@@ -277,28 +277,28 @@ describe RubyJIT::IR::Builder do
         expect(@builder.basic_block_to_fragment([])).to be_a(RubyJIT::IR::Builder::GraphFragment)
       end
 
-      it 'that has a region node' do
-        region = @builder.basic_block_to_fragment([]).region
-        expect(region).to be_a(RubyJIT::IR::Node)
-        expect(region.op).to eql :region
+      it 'that has a merge node' do
+        merge = @builder.basic_block_to_fragment([]).merge
+        expect(merge).to be_a(RubyJIT::IR::Node)
+        expect(merge.op).to eql :merge
       end
 
-      it 'that has a region node' do
-        region = @builder.basic_block_to_fragment([]).region
-        expect(region).to be_a(RubyJIT::IR::Node)
-        expect(region.op).to eql :region
+      it 'that has a merge node' do
+        merge = @builder.basic_block_to_fragment([]).merge
+        expect(merge).to be_a(RubyJIT::IR::Node)
+        expect(merge.op).to eql :merge
       end
 
       it 'that has a last node' do
         fragment = @builder.basic_block_to_fragment([])
         expect(fragment.last_control).to be_a(RubyJIT::IR::Node)
-        expect(fragment.last_control).to eql fragment.region
+        expect(fragment.last_control).to eql fragment.merge
       end
 
       it 'that has a last side-effect node' do
         fragment = @builder.basic_block_to_fragment([])
         expect(fragment.last_control).to be_a(RubyJIT::IR::Node)
-        expect(fragment.last_control).to eql fragment.region
+        expect(fragment.last_control).to eql fragment.merge
       end
 
       it 'that has a list of the value of nodes at the end' do
@@ -335,10 +335,10 @@ describe RubyJIT::IR::Builder do
         expect(@fragment.stack_in).to be_empty
       end
 
-      it 'with the region, trace and send nodes forming a control flow to the last_control' do
+      it 'with the merge, trace and send nodes forming a control flow to the last_control' do
         RubyJIT::Fixtures::Builder.control_flows(
             self, @graph, @fragment.last_control,
-            :region,
+            :merge,
             ->(n) { n.op == :trace && n.props[:line] == 27 },
             ->(n) { n.op == :trace && n.props[:line] == 28 },
             :send,
@@ -393,10 +393,10 @@ describe RubyJIT::IR::Builder do
         expect(@fragment.stack_in).to be_empty
       end
 
-      it 'with the region, trace and send nodes forming a control flow to the last_control' do
+      it 'with the merge, trace and send nodes forming a control flow to the last_control' do
         RubyJIT::Fixtures::Builder.control_flows(
             self, @graph, @fragment.last_control,
-            :region,
+            :merge,
             ->(n) { n.op == :trace && n.props[:line] == 31 },
             ->(n) { n.op == :trace && n.props[:line] == 32 },
             :send,
@@ -451,10 +451,10 @@ describe RubyJIT::IR::Builder do
         expect(@fragment.stack_in).to be_empty
       end
 
-      it 'with the region and trace nodes forming a control flow to the last_control' do
+      it 'with the merge and trace nodes forming a control flow to the last_control' do
         RubyJIT::Fixtures::Builder.control_flows(
             self, @graph, @fragment.last_control,
-            :region,
+            :merge,
             ->(n) { n.op == :trace && n.props[:line] == 33 },
             :jump
         )
@@ -504,10 +504,10 @@ describe RubyJIT::IR::Builder do
         expect(@fragment.stack_in).to be_empty
       end
 
-      it 'with the region, trace and send nodes forming a control flow to the last_control' do
+      it 'with the merge, trace and send nodes forming a control flow to the last_control' do
         RubyJIT::Fixtures::Builder.control_flows(
             self, @graph, @fragment.last_control,
-            :region,
+            :merge,
             ->(n) { n.op == :trace && n.props[:line] == 35 },
             ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
             ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(:args).from_nodes.first.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
@@ -576,10 +576,10 @@ describe RubyJIT::IR::Builder do
         expect(@fragment.stack_in.first.op).to eql :input
       end
 
-      it 'with the region, trace, and return nodes forming a control flow to the last_control' do
+      it 'with the merge, trace, and return nodes forming a control flow to the last_control' do
         RubyJIT::Fixtures::Builder.control_flows(
             self, @graph, @fragment.last_control,
-            :region,
+            :merge,
             ->(n) { n.op == :trace && n.props[:line] == 37 }
         )
       end
