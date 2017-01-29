@@ -27,6 +27,7 @@ require_relative '../spec/rubyjit/fixtures'
 builder = RubyJIT::IR::Builder.new
 fragment = builder.basic_block_to_fragment(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
 graph = RubyJIT::IR::Graph.from_fragment(fragment)
+postbuild = RubyJIT::Passes::PostBuild.new
+postbuild.run graph
 graphviz = RubyJIT::IR::Graphviz.new(graph)
-
 graphviz.visualise 'add.pdf'

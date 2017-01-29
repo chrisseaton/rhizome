@@ -36,18 +36,27 @@ module RubyJIT
           # Remove branch and input nodes, as after construction both of these
           # are just going to sit on edges with one input and one output, and
           # we might as well directly connect the nodes that they are between.
+          # Also remove regions that have only one control input.
 
-          if [:branch, :input].include?(n.op)
-            raise unless n.inputs.size == 1
-            input = n.inputs.edges.first.from
-
-            n.outputs.edges.each do |output|
-              input.output_to output.output_name, output.to, output.input_name
-              output.to.inputs.edges.reject! { |input| input.from == n }
-            end
+          if [:branch, :input].include?(n.op) || (n.op == :region && n.outputs.size == 1)
+            # For each input edge...
 
             n.inputs.edges.each do |input|
-              input.from.outputs.edges.reject! { |output| output.to == n }
+              # ...connect them to each output the node had...
+
+              n.outputs.edges.each do |output|
+                input.from.output_to output.output_name, output.to, output.input_name
+              end
+
+              # ...and disconnect them from the node.
+
+              input.from.outputs.edges.reject! { |o| o.to == n }
+            end
+
+            # Disconnect the node from all outputs.
+
+            n.outputs.edges.each do |output|
+              output.to.inputs.edges.reject! { |i| i.from == n }
             end
           end
         end
