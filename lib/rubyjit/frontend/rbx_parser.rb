@@ -72,10 +72,10 @@ module RubyJIT
             when /(\d+):\s+send_stack\s+:([\w\+\-<]+),\s+(\d+)/
               insns.push [:send, $2.to_sym, $3.to_i]
             when /(\d+):\s+goto\s+(\d+):/
-              insns.push [:branch, $2.to_i]
+              insns.push [:jump, $2.to_i]
             when /(\d+):\s+goto_if_false\s+(\d+):/
               insns.push [:not]
-              insns.push [:branchif, $2.to_i]
+              insns.push [:branch, $2.to_i]
             when /(\d+):\s+ret/
               insns.push [:return]
             when /(\d+):\s+allow_private/
@@ -91,7 +91,7 @@ module RubyJIT
         # Go back and modify branch targets - we didn't know offsets for forward jumps on the first pass.
 
         insns.each do |insn|
-          if [:branch, :branchif].include?(insn.first)
+          if [:jump, :branch].include?(insn.first)
             insn[1] = labels[insn[1]]
           end
         end

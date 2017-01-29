@@ -127,11 +127,11 @@ module RubyJIT
             next_fragment = fragments[next_i]
 
             fragment.last_control.output_to :control, next_fragment.region
-          elsif fragment.last_control.op == :branchif
-            # If the block ends with a conditional branch then it goes to two
-            # possible next blocks. The branchif node outputs two control
-            # edges, one labelled true and one labelled false. This is the
-            # only place where control forks like this.
+          elsif fragment.last_control.op == :branch
+            # If the block ends with a branch then it goes to two possible next
+            # blocks. The branch node outputs two control edges, one labelled
+            # true and one labelled false. This is the only place where control
+            # forks like this.
 
             raise unless block.next.size == 2
             fragment.last_control.output_to :true, fragments[block.next[0]].region, :control
@@ -142,26 +142,25 @@ module RubyJIT
         end
       end
 
-      # Finds the instructions that are the targets of some kind of branching,
+      # Finds the instructions that are the targets of jumping or branching,
       # or fallthrough from not branching.
 
       def targets(insns)
         targets = Set.new
 
-        # The first instruction is implicitly branched to when the function
+        # The first instruction is implicitly jumped to when the function
         # starts.
 
         targets.add 0 unless insns.empty?
 
-        # Look at each instruction. If it's a branch or conditional branch add
-        # its target to the list of targets. If it's a conditional branch then
-        # the branch may not be taken and so the next instruction is also a
-        # target.
+        # Look at each instruction. If it's a jump add its target to the list of
+        # targets. If it's a branch then the branch may not be taken and so the
+        # next instruction is also a target as well as the actual target.
 
         insns.each_with_index do |insn, index|
-          if [:branch, :branchif].include?(insn.first)
+          if [:jump, :branch].include?(insn.first)
             targets.add insn[1]
-            targets.add index + 1 if insn.first == :branchif
+            targets.add index + 1 if insn.first == :branch
           end
         end
 
@@ -179,11 +178,11 @@ module RubyJIT
       # Find the basic blocks in an array of instructions.
 
       def basic_blocks(insns)
-        # Branch targets give us the start of each basic block.
+        # Jump and branch targets give us the start of each basic block.
 
         targets = targets(insns)
 
-        # Create a basic block for each branch target.
+        # Create a basic block for each jump or branch target.
 
         blocks = {}
 
@@ -206,12 +205,12 @@ module RubyJIT
 
           prev_blocks = []
 
-          # Look at the last instruction and its branch targets to see what
-          # the next possible basic blocks are.
+          # Look at the last instruction and its targets to see what the next
+          # possible basic blocks are.
 
           next_blocks = []
-          next_blocks.push last_insn[1]        if [:branch, :branchif].include?(last_insn.first)
-          next_blocks.push targets[index + 1]  unless [:branch, :return].include?(last_insn.first)
+          next_blocks.push last_insn[1]        if [:jump, :branch].include?(last_insn.first)
+          next_blocks.push targets[index + 1]  unless [:jump, :return].include?(last_insn.first)
 
           blocks[start] = BasicBlock.new(start, block_insns, prev_blocks, next_blocks)
         end
@@ -339,14 +338,14 @@ module RubyJIT
               value_node.output_to :value, not_node
               stack.push not_node
               last_node = not_node
+            when :jump
+              jump_node = Node.new(:jump)
+              last_node = jump_node
             when :branch
-              branch_node = Node.new(:branch)
-              last_node = branch_node
-            when :branchif
               value_node = pop.call
-              branchif_node = Node.new(:branchif)
-              value_node.output_to :value, branchif_node, :condition
-              last_node = branchif_node
+              branch_node = Node.new(:branch)
+              value_node.output_to :value, branch_node, :condition
+              last_node = branch_node
             when :return
               last_node = pop.call
               stack.push last_node
@@ -356,11 +355,11 @@ module RubyJIT
 
           # The trace and send instructions have side effects - link them into
           # the backbone of control flow so that we know one instruction with
-          # side effects needs to happen before any other after it. The two
+          # side effects needs to happen before any other after it. The jump and
           # branch instructions could or could not be seen as side effects. We
           # treat them so because it seems to make this easier.
 
-          if [:trace, :send, :branch, :branchif].include?(insn.first)
+          if [:trace, :send, :jump, :branch].include?(insn.first)
             last_control.output_to :control, last_node
             last_control = last_node
           end

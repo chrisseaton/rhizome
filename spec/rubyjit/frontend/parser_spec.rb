@@ -84,7 +84,7 @@ describe RubyJIT::Frontend::RbxParser do
   describe '.parse' do
 
     # The bytecode from the Rubinius parser doesn't have trace instructions, so mask_traces removes them and
-    # normalises branch offsets to 0.
+    # normalises jump and branch offsets to 0.
 
     it 'parses the text for an add method' do
       expect(RubyJIT::Fixtures.mask_traces(@parser.parse(RubyJIT::Fixtures::ADD_BYTECODE_RBX)))

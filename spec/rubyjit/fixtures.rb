@@ -169,10 +169,10 @@ END
         [:push,     2       ],
         [:send,     :<,   1 ],
         [:not               ],
-        [:branchif, 12      ],
+        [:branch  , 12      ],
         [:trace,    33      ],
         [:load,     :n      ],
-        [:branch,   24      ],
+        [:jump,     24      ],
         [:trace,    35      ],
         [:self              ],
         [:load,     :n      ],
@@ -193,7 +193,7 @@ END
       insns = insns.reject { |i| i.first == :trace }
 
       insns.map do |insn|
-        if [:branch, :branchif].include?(insn.first)
+        if [:jump, :branch].include?(insn.first)
           insn = insn.dup
           insn[1] = 0
         end
@@ -225,11 +225,11 @@ END
         [:store,    :v_3    ],
         [:load,     :v_3    ],
         [:not               ],
-        [:branchif, 14      ],
+        [:branch,   14      ],
         [:trace,    32      ],
         [:load,     :n      ],
         [:store,    :v_4    ],
-        [:branch,   37      ],
+        [:jump,     37      ],
         [:trace,    34      ],
         [:load,     :n      ],
         [:push,     1       ],

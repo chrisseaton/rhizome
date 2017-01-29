@@ -30,13 +30,13 @@ describe RubyJIT::Passes::PostBuild do
 
   describe '#run' do
 
-    it 'removes branch nodes' do
-      branch = RubyJIT::IR::Node.new(:branch)
-      @graph.start.output_to :control, branch
-      branch.output_to :control, @graph.finish
-      expect(@graph.contains?(:branch)).to be_truthy
+    it 'removes jump nodes' do
+      jump = RubyJIT::IR::Node.new(:jump)
+      @graph.start.output_to :control, jump
+      jump.output_to :control, @graph.finish
+      expect(@graph.contains?(:jump)).to be_truthy
       @pass.run @graph
-      expect(@graph.contains?(:branch)).to be_falsey
+      expect(@graph.contains?(:jump)).to be_falsey
     end
 
     it 'removes input nodes' do

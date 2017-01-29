@@ -117,8 +117,8 @@ These are the instructions in the RubyJIT bytecode format:
 * `push value` pushes a value such as a number onto the stack
 * `send name argc` pops `argc` number of parameters off the stack, and then a value, and calls a method on the value with the parameters
 * `not` negates the value on the top of the stack
-* `branch index` branches to the instruction at index
-* `branchif index` pops a value off the stack and branches to the instruction at index if it is true
+* `jump index` jumps to the instruction at index
+* `branch index` pops a value off the stack and branches to the instruction at index if it is true
 * `return` pops a value off the stack and returns it
 
 #### Example

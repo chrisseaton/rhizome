@@ -45,7 +45,7 @@ our own RubyJIT format.
 #### Two-pass parsing
 
 The only minor complexity is that we need to re-map the way that instructions
-are addressed when they are the targets of a branch instruction. MRI and
+are addressed when they are the targets of jump and branch instructions. MRI and
 Rubinius use the actual byte offsets of instructions relative to the start of
 the method. JRuby uses more formally named labels that appear in the bytecode
 like additional instructions.
@@ -53,15 +53,15 @@ like additional instructions.
 RubyJIT uses the simpler addressing system of the instruction index, discounting
 how many bytes they may need if they were ever serialised.
 
-The problem is that branches may go forward in the stream of instructions. In
-that case you know the address of the instruction in the input bytecode format,
-but you don't know how many more instructions there until you see that address
-and so you don't know what to translate it to.
+The problem is that jumps and branches usually go forward in the stream of
+instructions. In that case you know the address of the instruction in the input
+bytecode format, but you don't know how many more instructions there until you
+see that address and so you don't know what to translate it to.
 
-We therefore use a two-pass system where branch target addresses are left as-is
-on the first parse, and a map is built of old addresses to new addresses. At the
-end, when the map is complete becuase all instructions have been seen, all the
-branch targets are updated.
+We therefore use a two-pass system where jump and branch target addresses are
+left as-is on the first parse, and a map is built of old addresses to new
+addresses. At the end, when the map is complete because all instructions have
+been seen, all the jump and branch targets are updated.
 
 #### Parsing MRI's bytecode format
 

@@ -90,11 +90,11 @@ module RubyJIT
               insns.push [:send, $4.to_sym, 1]
               insns.push [:store, $1.to_sym]
             when /jump\((LBL_\d+:\d+)\)/
-              insns.push [:branch, $1.to_sym]
+              insns.push [:jump, $1.to_sym]
             when /b_false\((LBL_\d+:\d+), %([\w_]+)\)/
               insns.push [:load, $2.to_sym]
               insns.push [:not]
-              insns.push [:branchif, $1.to_sym]
+              insns.push [:branch, $1.to_sym]
             when /return\(%([\w_]+)\)/
               insns.push [:load, $1.to_sym]
               insns.push [:return]
@@ -103,10 +103,10 @@ module RubyJIT
           end
         end
 
-        # Go back and modify branch targets - we didn't know offsets for forward jumps on the first pass.
+        # Go back and modify jump and branch targets - we didn't know offsets for forward jumps on the first pass.
 
         insns.each do |insn|
-          if [:branch, :branchif].include?(insn.first)
+          if [:jump, :branch].include?(insn.first)
             insn[1] = labels[insn[1]]
           end
         end

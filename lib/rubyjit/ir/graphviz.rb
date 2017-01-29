@@ -131,10 +131,10 @@ module RubyJIT
               when :region
                 out.puts "  #{id(node)}_in[style=\"\invis\"];"
                 out.puts "  #{id(node)}_in -> #{id(node)}[color=\"orange\",style=\"dashed\"];"
-              when :branch
+              when :jump
                 out.puts "  #{id(node)}_target[style=\"\invis\"];"
                 out.puts "  #{id(node)} -> #{id(node)}_target[color=\"orange\",style=\"dashed\"];"
-              when :branchif
+              when :branch
                 out.puts "  #{id(node)}_true[style=\"\invis\"];"
                 out.puts "  #{id(node)}_false[style=\"\invis\"];"
                 out.puts "  #{id(node)} -> #{id(node)}_true[color=\"orange\",style=\"dashed\"];"

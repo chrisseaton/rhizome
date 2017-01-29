@@ -159,29 +159,29 @@ describe RubyJIT::IR::Builder do
       expect(@builder.targets([[:self], [:return]])).to include(0)
     end
 
+    it 'reports the target of a jump instruction as a target' do
+      expect(@builder.targets([[:jump, 1], [:self], [:return]])).to include(1)
+    end
+
     it 'reports the target of a branch instruction as a target' do
-      expect(@builder.targets([[:branch, 1], [:self], [:return]])).to include(1)
+      expect(@builder.targets([[:arg, 0], [:branch, 4], [:self], [:return], [:self], [:return]])).to include(4)
     end
 
-    it 'reports the target of a branchif instruction as a target' do
-      expect(@builder.targets([[:arg, 0], [:branchif, 4], [:self], [:return], [:self], [:return]])).to include(4)
+    it 'reports the instruction following a branch instruction as a target' do
+      expect(@builder.targets([[:arg, 0], [:branch, 4], [:self], [:return], [:self], [:return]])).to include(2)
     end
 
-    it 'reports the instruction following a branchif instruction as a target' do
-      expect(@builder.targets([[:arg, 0], [:branchif, 4], [:self], [:return], [:self], [:return]])).to include(2)
-    end
-
-    it 'does not report instructions that follow a branch as a target if nobody actually targets them' do
-      expect(@builder.targets([[:arg, 0], [:branch, 4], [:self], [:return], [:self], [:return]])).to_not include(2)
+    it 'does not report instructions that follow a jump as a target if nobody actually targets them' do
+      expect(@builder.targets([[:arg, 0], [:jump, 4], [:self], [:return], [:self], [:return]])).to_not include(2)
     end
 
     it 'does not report other instructions as a target' do
-      expect(@builder.targets([[:arg, 0], [:branch, 4], [:self], [:return], [:self], [:return]])).to_not include(3)
+      expect(@builder.targets([[:arg, 0], [:jump, 4], [:self], [:return], [:self], [:return]])).to_not include(3)
     end
 
     it 'only reports targets once' do
-      expect(@builder.targets([[:branch, 0]])).to contain_exactly(0)
-      expect(@builder.targets([[:arg, 0], [:branchif, 3], [:branch, 3], [:self], [:return]])).to contain_exactly(0, 2, 3)
+      expect(@builder.targets([[:jump, 0]])).to contain_exactly(0)
+      expect(@builder.targets([[:arg, 0], [:branch, 3], [:jump, 3], [:self], [:return]])).to contain_exactly(0, 2, 3)
     end
 
   end
@@ -215,7 +215,7 @@ describe RubyJIT::IR::Builder do
       before :each do
         @insns = [
             [:arg, 0],
-            [:branch, 2],
+            [:jump, 2],
 
             [:push, 14],
             [:return]
@@ -244,10 +244,10 @@ describe RubyJIT::IR::Builder do
       before :each do
         @insns = [
             [:arg, 0],
-            [:branchif, 4],
+            [:branch, 4],
 
             [:push, 14],
-            [:branch, 5],
+            [:jump, 5],
 
             [:push, 2],
 
@@ -400,17 +400,17 @@ describe RubyJIT::IR::Builder do
             ->(n) { n.op == :trace && n.props[:line] == 31 },
             ->(n) { n.op == :trace && n.props[:line] == 32 },
             :send,
-            :branchif
+            :branch
         )
       end
 
-      it 'with data flowing from the arg and constant to the send, the not and the branchif' do
+      it 'with data flowing from the arg and constant to the send, the not and the branch' do
         RubyJIT::Fixtures::Builder.data_flows(
             self, @graph,
             [:arg, :value, :send, :receiver],
             [:constant, :value, :send, :args],
             [:send, :value, :not, :value],
-            [:not, :value, :branchif, :condition]
+            [:not, :value, :branch, :condition]
         )
       end
 
@@ -456,7 +456,7 @@ describe RubyJIT::IR::Builder do
             self, @graph, @fragment.last_control,
             :region,
             ->(n) { n.op == :trace && n.props[:line] == 33 },
-            :branch
+            :jump
         )
       end
 

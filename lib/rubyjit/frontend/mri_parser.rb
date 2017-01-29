@@ -77,10 +77,10 @@ module RubyJIT
             when /(\d+)\s+\w+\s+<callinfo\!mid:([+\-<>\w]+), argc:(\d+), (FCALL\|)?ARGS_SIMPLE>, <callcache>/
               insns.push [:send, $2.to_sym, $3.to_i]
             when /(\d+)\s+jump\s+(\d+)/
-              insns.push [:branch, $2.to_i]
+              insns.push [:jump, $2.to_i]
             when /(\d+)\s+branchunless\s+(\d+)/
               insns.push [:not]
-              insns.push [:branchif, $2.to_i]
+              insns.push [:branch, $2.to_i]
             when /(\d+)\s+leave/
               insns.push [:return]
             else
@@ -95,7 +95,7 @@ module RubyJIT
         # Go back and modify branch targets - we didn't know offsets for forward jumps on the first pass.
 
         insns.each do |insn|
-          if [:branch, :branchif].include?(insn.first)
+          if [:jump, :branch].include?(insn.first)
             insn[1] = labels[insn[1]]
           end
         end

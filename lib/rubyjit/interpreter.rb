@@ -64,9 +64,9 @@ module RubyJIT
           when :not
             stack.push !stack.pop
             ip += 1
-          when :branch
+          when :jump
             ip = insn[1]
-          when :branchif
+          when :branch
             if stack.pop
               ip = insn[1]
             else

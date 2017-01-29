@@ -77,7 +77,7 @@ describe RubyJIT::Interpreter do
         [5,   [10],                   {n: 10} ], # [:push,     2       ],
         [6,   [10, 2],                {n: 10} ], # [:send,     :<,   1 ],
         [7,   [false],                {n: 10} ], # [:not               ],
-        [8,   [true],                 {n: 10} ], # [:branchif, 12      ],
+        [8,   [true],                 {n: 10} ], # [:branch,   12      ],
         [12,  [],                     {n: 10} ], # [:trace,    35      ],
         [13,  [],                     {n: 10} ], # [:self              ],
         [14,  [receiver],             {n: 10} ], # [:load,     :n      ],
