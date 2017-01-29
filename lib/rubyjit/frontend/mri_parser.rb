@@ -72,8 +72,8 @@ module RubyJIT
               insns.push [:load, locals[argc + size - $2.to_i]]
             when /(\d+)\s+putobject\s+(\d+)/
               insns.push [:push, $2.to_i]
-            when /(\d+)\s+putobject_OP_INT2FIX_O_1_C_/
-              insns.push [:push, 1]
+            when /(\d+)\s+putobject_OP_INT2FIX_O_(\d+)_C_/
+              insns.push [:push, $2.to_i]
             when /(\d+)\s+\w+\s+<callinfo\!mid:([+\-<>\w]+), argc:(\d+), (FCALL\|)?ARGS_SIMPLE>, <callcache>/
               insns.push [:send, $2.to_sym, $3.to_i]
             when /(\d+)\s+jump\s+(\d+)/
