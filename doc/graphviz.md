@@ -76,7 +76,7 @@ digraph {
   node70172598585540[label="arg(0)"];
   node70172598585540 -> node70172598584860[color="blue", label="receiver", dir="back"];
   node70172598585380[label="arg(1)"];
-  node70172598585380 -> node70172598584860[color="blue", label="args", dir="back"];
+  node70172598585380 -> node70172598584860[color="blue", label="arg(0)", dir="back"];
 }
 ```
 

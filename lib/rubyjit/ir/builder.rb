@@ -90,11 +90,11 @@ module RubyJIT
 
             fragment.names_in.each do |name, input|
               phi = Node.new(:phi)
-              fragment.merge.output_to :value, phi
+              fragment.merge.output_to :switch, phi
 
               block.prev.each do |prev|
                 prev_fragment = fragments[prev]
-                prev_fragment.names_out[name].output_to :value, phi
+                prev_fragment.names_out[name].output_to :value, phi, :"value(#{prev})"
               end
 
               phi.output_to :value, input
@@ -102,11 +102,11 @@ module RubyJIT
 
             fragment.stack_in.each_with_index do |input, index|
               phi = Node.new(:phi)
-              fragment.merge.output_to :value, phi
+              fragment.merge.output_to :switch, phi
 
               block.prev.each do |prev|
                 prev_fragment = fragments[prev]
-                prev_fragment.stack_out[index].output_to :value, phi
+                prev_fragment.stack_out[index].output_to :value, phi, :"value(#{prev})"
               end
 
               phi.output_to :value, input
@@ -126,7 +126,7 @@ module RubyJIT
             next_i = block.next.first
             next_fragment = fragments[next_i]
 
-            fragment.last_control.output_to :control, next_fragment.merge
+            fragment.last_control.output_to :control, next_fragment.merge, :"control(#{block.start})"
           elsif fragment.last_control.op == :branch
             # If the block ends with a branch then it goes to two possible next
             # blocks. The branch node outputs two control edges, one labelled
@@ -324,9 +324,9 @@ module RubyJIT
               name = insn[1]
               argc = insn[2]
               send_node = Node.new(:send, name: name)
-              argc.times do
+              argc.times do |n|
                 arg_node = pop.call
-                arg_node.output_to :value, send_node, :args
+                arg_node.output_to :value, send_node, :"arg(#{argc-n-1})"
               end
               receiver_node = pop.call
               receiver_node.output_to :value, send_node, :receiver

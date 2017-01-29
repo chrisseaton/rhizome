@@ -180,9 +180,19 @@ module RubyJIT
       # graph. Use interesting labels, or nothing at all.
 
       def edge_label(edge)
-        if edge.names.all? { |n| n == :control} || edge.names.all? { |n| n == :value}
+        all_control = edge.names.all? { |n| n == :control}
+        any_control = edge.names.any? { |n| n == :control}
+        all_value = edge.names.all? { |n| n == :value}
+        any_value = edge.names.any? { |n| n == :value}
+        merge_or_phi = [:merge, :phi].include?(edge.to.op)
+        merge_to_phi = edge.from.op == :merge && edge.to.op == :phi
+
+        if ((all_control || all_value) && !merge_or_phi) || merge_to_phi
           nil
-        elsif edge.names.any? { |n| n == :control} || edge.names.any? { |n| n == :value}
+        elsif [:merge, :phi].include?(edge.to.op)
+          edge.input_name =~ /\w+\((\d+)\)/
+          $1.to_s
+        elsif any_control || any_value
           edge.names.reject { |n| [:control, :value].include?(n) }.first
         else
           "#{edge.output_name}→#{edge.input_name}"

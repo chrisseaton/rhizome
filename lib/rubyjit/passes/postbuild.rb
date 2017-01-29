@@ -45,7 +45,7 @@ module RubyJIT
               # ...connect them to each output the node had...
 
               n.outputs.edges.each do |output|
-                input.from.output_to output.output_name, output.to, output.input_name
+                input.from.output_to input.output_name, output.to, output.input_name
               end
 
               # ...and disconnect them from the node.
