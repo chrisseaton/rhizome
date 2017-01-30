@@ -353,7 +353,7 @@ describe RubyJIT::IR::Builder do
             :b, ->(n) { n.op == :arg && n.props[:n] == 1 },
             :add, :send,
             [:a, :value, :add, :receiver],
-            [:b, :value, :add, :args],
+            [:b, :value, :add, :'arg(0)'],
             [:add, :value, :finish, :value]
         )
       end
@@ -408,7 +408,7 @@ describe RubyJIT::IR::Builder do
         RubyJIT::Fixtures::Builder.data_flows(
             self, @graph,
             [:arg, :value, :send, :receiver],
-            [:constant, :value, :send, :args],
+            [:constant, :value, :send, :'arg(0)'],
             [:send, :value, :not, :value],
             [:not, :value, :branch, :condition]
         )
@@ -505,36 +505,40 @@ describe RubyJIT::IR::Builder do
       end
 
       it 'with the merge, trace and send nodes forming a control flow to the last_control' do
+        arg0 = :'arg(0)'
+
         RubyJIT::Fixtures::Builder.control_flows(
             self, @graph, @fragment.last_control,
             :merge,
             ->(n) { n.op == :trace && n.props[:line] == 35 },
-            ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
-            ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(:args).from_nodes.first.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
-            ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 2 },
-            ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(:args).from_nodes.first.inputs.with_input_name(:args).from_nodes.first.props[:value] == 2 },
+            ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(arg0).from_nodes.first.props[:value] == 1 },
+            ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(arg0).from_nodes.first.inputs.with_input_name(arg0).from_nodes.first.props[:value] == 1 },
+            ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(arg0).from_nodes.first.props[:value] == 2 },
+            ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(arg0).from_nodes.first.inputs.with_input_name(arg0).from_nodes.first.props[:value] == 2 },
             ->(n) { n.op == :send && n.props[:name] == :+ }
         )
       end
 
       it 'with data flowing through the expression' do
+        arg0 = :'arg(0)'
+
         RubyJIT::Fixtures::Builder.data_flows(
             self, @graph,
             :const_one, ->(n) { n.op == :constant && n.props[:value] == 1 },
             :const_two, ->(n) { n.op == :constant && n.props[:value] == 2 },
-            :sub_one, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
-            :fib_one, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(:args).from_nodes.first.inputs.with_input_name(:args).from_nodes.first.props[:value] == 1 },
-            :sub_two, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(:args).from_nodes.first.props[:value] == 2 },
-            :fib_two, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(:args).from_nodes.first.inputs.with_input_name(:args).from_nodes.first.props[:value] == 2 },
+            :sub_one, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(arg0).from_nodes.first.props[:value] == 1 },
+            :fib_one, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(arg0).from_nodes.first.inputs.with_input_name(arg0).from_nodes.first.props[:value] == 1 },
+            :sub_two, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(arg0).from_nodes.first.props[:value] == 2 },
+            :fib_two, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(arg0).from_nodes.first.inputs.with_input_name(arg0).from_nodes.first.props[:value] == 2 },
             :add, ->(n) { n.op == :send && n.props[:name] == :+ },
             [:input, :value, :sub_one, :receiver],
-            [:const_one, :value, :sub_one, :args],
+            [:const_one, :value, :sub_one, arg0],
             [:input, :value, :sub_two, :receiver],
-            [:const_two, :value, :sub_two, :args],
-            [:sub_one, :value, :fib_one, :args],
-            [:sub_two, :value, :fib_two, :args],
+            [:const_two, :value, :sub_two, arg0],
+            [:sub_one, :value, :fib_one, arg0],
+            [:sub_two, :value, :fib_two, arg0],
             [:fib_one, :value, :add, :receiver],
-            [:fib_two, :value, :add, :args],
+            [:fib_two, :value, :add, arg0],
             [:add, :value, :finish, :value]
         )
       end
