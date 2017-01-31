@@ -42,22 +42,16 @@ module RubyJIT
             # For each input edge...
 
             n.inputs.edges.each do |input|
-              # ...connect them to each output the node had...
+              # ...connect them to each output the node had.
 
               n.outputs.edges.each do |output|
                 input.from.output_to input.output_name, output.to, output.input_name
               end
-
-              # ...and disconnect them from the node.
-
-              input.from.outputs.edges.reject! { |o| o.to == n }
             end
 
-            # Disconnect the node from all outputs.
+            # Then remove the node from the graph.
 
-            n.outputs.edges.each do |output|
-              output.to.inputs.edges.reject! { |i| i.from == n }
-            end
+            n.remove
           end
         end
       end

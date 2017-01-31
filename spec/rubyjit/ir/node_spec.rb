@@ -145,4 +145,47 @@ describe RubyJIT::IR::Node do
 
   end
 
+  describe '#remove' do
+
+    it 'removes a node from adjacent nodes' do
+      a = RubyJIT::IR::Node.new(:a)
+      b = RubyJIT::IR::Node.new(:b)
+      c = RubyJIT::IR::Node.new(:c)
+
+      a.output_to :value, c
+      b.output_to :value, c
+
+      expect(b.outputs.nodes).to include c
+      expect(c.inputs.nodes).to include b
+
+      b.remove
+
+      expect(b.outputs.nodes).to_not include c
+      expect(c.inputs.nodes).to_not include b
+    end
+
+    it 'removes a node from a graph' do
+      graph = RubyJIT::IR::Graph.new
+      a = RubyJIT::IR::Node.new(:a)
+      b = RubyJIT::IR::Node.new(:b)
+      c = RubyJIT::IR::Node.new(:c)
+
+      graph.start.output_to :control, a
+      a.output_to :value, c
+      b.output_to :value, c
+      a.output_to :control, graph.finish
+
+      expect(graph.all_nodes).to include a
+      expect(graph.all_nodes).to include b
+      expect(graph.all_nodes).to include c
+
+      b.remove
+
+      expect(graph.all_nodes).to include a
+      expect(graph.all_nodes).to_not include b
+      expect(graph.all_nodes).to include c
+    end
+
+  end
+
 end

@@ -79,6 +79,13 @@ module RubyJIT
         "Node<#{object_id}, #{op}, #{props}>"
       end
 
+      # Remove a node by removing all its input and output edges.
+
+      def remove
+        inputs.edges.dup.each(&:remove)
+        outputs.edges.dup.each(&:remove)
+      end
+
     end
 
     # An edge is a connection from one node to another.
@@ -111,6 +118,13 @@ module RubyJIT
 
       def control?
         names.any? { |n| n.to_s.start_with?('control') }
+      end
+
+      # Remove an edge by removing the references from the nodes to it.
+
+      def remove
+        from.outputs.edges.delete self
+        to.inputs.edges.delete self
       end
 
     end
