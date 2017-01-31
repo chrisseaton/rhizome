@@ -64,13 +64,13 @@ module RubyJIT
       # Does this node have any control input?
 
       def has_control_input?
-        inputs.input_names.include?(:control)
+        inputs.input_names.any? { |n| n.to_s.start_with?('control') }
       end
 
       # Does this node have any control output?
 
       def has_control_output?
-        outputs.output_names.include?(:control)
+        outputs.output_names.any? { |n| n.to_s.start_with?('control') }
       end
 
       # Pretty print the node for debugging.
@@ -110,7 +110,7 @@ module RubyJIT
       # Is this a control edge?
 
       def control?
-        names.include?(:control)
+        names.any? { |n| n.to_s.start_with?('control') }
       end
 
     end
