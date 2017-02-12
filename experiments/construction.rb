@@ -46,5 +46,12 @@ viz.visualise 'built.pdf'
 postbuild = RubyJIT::Passes::PostBuild.new
 postbuild.run graph
 
+phases_runner = RubyJIT::Passes::Runner.new(
+    RubyJIT::Passes::DeadCode.new,
+    RubyJIT::Passes::NoChoicePhis.new
+)
+
+phases_runner.run graph
+
 viz = RubyJIT::IR::Graphviz.new(graph)
 viz.visualise 'post.pdf'

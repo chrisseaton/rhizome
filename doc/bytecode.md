@@ -176,17 +176,17 @@ variables. it also includes `trace` instructions, which Rubinius does not have
 as it does not support `set_trace_func`.
 
 ```
-arg       0
-store     a
-arg       1
-store     :b
-trace     27
-trace     28
-load      a
-load      b
-send      +   1
-trace     29
-return
+ 0  arg       0
+ 1  store     a
+ 2  arg       1
+ 3  store     :b
+ 4  trace     27
+ 5  trace     28
+ 6  load      a
+ 7  load      b
+ 8  send      +   1
+ 9  trace     29
+10  return
 ```
 
 ### More technical details
