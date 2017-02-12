@@ -93,7 +93,7 @@ the graph.
 The JVM ecosystem has the [Ideal Graph Visualizer](igv), a graphical user
 interface desktop application for achieving the same goal. Ideal is the name of
 the intermediate representation used by the server compiler (also called 'C2',
-the one you get with the `--server` flag) in the HotSpot JVM, but it can now be
+the one you get with the `-server` flag) in the HotSpot JVM, but it can now be
 used with other graphical compilers such as Graal.
 
 [igv]: http://ssw.jku.at/Research/Papers/Wuerthinger07Master/Wuerthinger07Master.pdf

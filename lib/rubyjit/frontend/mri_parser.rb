@@ -46,14 +46,16 @@ module RubyJIT
         raise 'blocks not supported' unless block == -1
         raise 'keyword arguments not supported' unless kw1 == -1 && kw2 == -1 && kwrest == -1
 
-        locals = lines.shift.scan(/\[\s*\d+\] (\w+)<Arg>/).flatten.map(&:to_sym)
+        names = lines.shift
+        args = names.scan(/\[\s*\d+\] (\w+)<Arg>/).flatten.map(&:to_sym)
+        locals = args + names.scan(/\[\s*\d+\] (\w+) /).flatten.map(&:to_sym)
 
         insns = []
         labels = {}
 
         # Explicitly load arguments into locals.
 
-        locals.each_with_index do |name, n|
+        args.each_with_index do |name, n|
           insns.push [:arg, n]
           insns.push [:store, name]
         end
@@ -70,6 +72,8 @@ module RubyJIT
               insns.push [:self]
             when /(\d+)\s+getlocal_OP__WC__0\s+(\d+)/
               insns.push [:load, locals[argc + size - $2.to_i]]
+            when /(\d+)\s+setlocal_OP__WC__0\s+(\d+)/
+              insns.push [:store, locals[argc + size - $2.to_i]]
             when /(\d+)\s+putobject\s+(-?\d+)/
               insns.push [:push, $2.to_i]
             when /(\d+)\s+putobject_OP_INT2FIX_O_(\d+)_C_/

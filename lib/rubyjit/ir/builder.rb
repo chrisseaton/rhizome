@@ -49,7 +49,118 @@ module RubyJIT
           fragments[block.start] = basic_block_to_fragment(block.insns)
         end
 
-        # Then go back and connect the basic blocks together.
+        # Create more detailed, transitive, input and output names and stacks for each fragment.
+
+        trans_names_in = {}
+        trans_stack_in = {}
+
+        trans_names_out = {}
+        trans_stack_out = {}
+
+        blocks.each_value do |block|
+          fragment = fragments[block.start]
+
+          block_trans_names_in = {}
+          block_trans_stack_in = []
+
+          # Combine the names and stack values that come in from previous blocks.
+
+          if block.prev.size == 1
+            # If the block has a single previous block, simply use all the names
+            # and stack values out from that block.
+
+            prev = block.prev.first
+
+            block_trans_names_in.merge! trans_names_out[prev]
+            block_trans_stack_in.push *trans_stack_out[prev]
+          elsif block.prev.size > 1
+            # If the block has multiple previous blocks then we could have
+            # arrived at this basic block from either of them. That means that
+            # values coming in for names or the stack. For each value that
+            # comes in we join all the possible values in a phi node. The phi
+            # node works as a switch to choose the correct value. It takes
+            # input from the merge which starts this block, to tell it
+            # which way to switch.
+
+            # Find all the names out from all the previous blocks.
+
+            all_names_out = block.prev.map { |p| trans_names_out[p].keys }.flatten.uniq.sort
+
+            # See the number of stack values out from all the previous blocks.
+
+            max_stack_out = block.prev.map { |p| trans_stack_out[p].size }.max
+
+            # If all blocks don't have the same names and number of stack values we don't know what to do.
+
+            block.prev.each do |prev|
+              raise 'unsupported' unless trans_names_out[prev].keys.sort == all_names_out
+              raise 'unsupported' unless trans_stack_out[prev].size == max_stack_out
+            end
+
+            # Create phis for each value
+
+            all_names_out.each do |name|
+              phi = Node.new(:phi)
+              fragment.merge.output_to :switch, phi
+
+              block.prev.each do |prev|
+                trans_names_out[prev][name].output_to :value, phi, :"value(#{prev})"
+              end
+
+              block_trans_names_in[name] = phi
+            end
+
+            max_stack_out.times do |index|
+              phi = Node.new(:phi)
+              fragment.merge.output_to :switch, phi
+
+              block.prev.each do |prev|
+                trans_stack_out[prev][index].output_to :value, phi, :"value(#{prev})"
+              end
+
+              block_trans_stack_in.push phi
+            end
+          end
+
+          # The output set is the same as the input set...
+
+          block_trans_names_out = block_trans_names_in.dup
+          block_trans_stack_out = block_trans_stack_in.dup
+
+          # ...then add the new names and stack values from this fragment.
+
+          fragment.names_out.each do |name, value|
+            block_trans_names_out[name] = value
+          end
+
+          fragment.stack_out.each do |value|
+            block_trans_stack_out.push value
+          end
+
+          # Remember this transitive set for this block.
+
+          trans_names_in[block.start] = block_trans_names_in
+          trans_stack_in[block.start] = block_trans_stack_in
+
+          trans_names_out[block.start] = block_trans_names_out
+          trans_stack_out[block.start] = block_trans_stack_out
+        end
+
+        # Connect the data flow between fragments, using the transitive sets.
+
+        blocks.each_value do |block|
+          fragment = fragments[block.start]
+
+          fragment.names_in.each do |name, input|
+            trans_names_in[block.start][name].output_to :value, input
+          end
+
+          fragment.stack_in.each_with_index do |input, index|
+            trans_stack_in[block.start][index].output_to :value, input
+          end
+        end
+
+        # Connect the control flow between fragments.
 
         blocks.each_value do |block|
           fragment = fragments[block.start]
@@ -59,58 +170,6 @@ module RubyJIT
             # graph to it.
 
             @graph.start.output_to :control, fragment.merge
-          elsif block.prev.size == 1
-            # If the block has a single previous block, simply connect all
-            # the names and stack values from that block to this one.
-
-            prev = block.prev.first
-            prev_fragment = fragments[prev]
-
-            fragment.names_in.each do |name, input|
-              # The value of names at the end of the previous block become
-              # the initial value of names in this block.
-
-              prev_fragment.names_out[name].output_to :value, input
-            end
-
-            fragment.stack_in.each_with_index do |input, index|
-              # The values on the stack at the end of the previous block
-              # become the initial values on the stack in this block.
-
-              prev_fragment.stack_out[index].output_to :value, input
-            end
-          else
-            # If the block has multiple previous blocks then we could have
-            # arrived at this basic block from either of them. That means that
-            # values coming in for names or the stack. For each value that
-            # comes in we join all the possible values in a phi node. The phi
-            # node works as a switch to choose the correct value. It takes
-            # input from the merge which starts this block, to tell it
-            # which way to switch.
-
-            fragment.names_in.each do |name, input|
-              phi = Node.new(:phi)
-              fragment.merge.output_to :switch, phi
-
-              block.prev.each do |prev|
-                prev_fragment = fragments[prev]
-                prev_fragment.names_out[name].output_to :value, phi, :"value(#{prev})"
-              end
-
-              phi.output_to :value, input
-            end
-
-            fragment.stack_in.each_with_index do |input, index|
-              phi = Node.new(:phi)
-              fragment.merge.output_to :switch, phi
-
-              block.prev.each do |prev|
-                prev_fragment = fragments[prev]
-                prev_fragment.stack_out[index].output_to :value, phi, :"value(#{prev})"
-              end
-
-              phi.output_to :value, input
-            end
           end
 
           if block.next.empty?

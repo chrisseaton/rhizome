@@ -41,6 +41,14 @@ describe RubyJIT::Frontend::MRIParser do
         expect(@parser.text_for(RubyJIT::Fixtures.method(:fib))).to be == RubyJIT::Fixtures::FIB_BYTECODE_MRI
       end
 
+      it 'returns the text for the bytecode for a compare method' do
+        expect(@parser.text_for(RubyJIT::Fixtures.method(:compare))).to be == RubyJIT::Fixtures::COMPARE_BYTECODE_MRI
+      end
+
+      it 'returns the text for the bytecode for a compare method with local variables' do
+        expect(@parser.text_for(RubyJIT::Fixtures.method(:named_compare))).to be == RubyJIT::Fixtures::NAMED_COMPARE_BYTECODE_MRI
+      end
+
     end
 
   end
@@ -53,6 +61,14 @@ describe RubyJIT::Frontend::MRIParser do
 
     it 'parses the text for a fib method' do
       expect(@parser.parse(RubyJIT::Fixtures::FIB_BYTECODE_MRI)).to be == RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT
+    end
+
+    it 'parses the text for a compare method' do
+      expect(@parser.parse(RubyJIT::Fixtures::COMPARE_BYTECODE_MRI)).to be == RubyJIT::Fixtures::COMPARE_BYTECODE_RUBYJIT
+    end
+
+    it 'parses the text for a compare method with local variables' do
+      expect(@parser.parse(RubyJIT::Fixtures::NAMED_COMPARE_BYTECODE_MRI)).to be == RubyJIT::Fixtures::NAMED_COMPARE_BYTECODE_RUBYJIT
     end
 
   end

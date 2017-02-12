@@ -36,6 +36,27 @@ module RubyJIT
       end
     end
 
+    def self.compare(a, b)
+      if a < b
+        -1
+      elsif a > b
+        +1
+      else
+        0
+      end
+    end
+
+    def self.named_compare(a, b)
+      if a < b
+        n = -1
+      elsif a > b
+        n = +1
+      else
+        n = 0
+      end
+      n
+    end
+
     ADD_BYTECODE_MRI = <<END
 local table (size: 2, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
 [ 2] a<Arg>     [ 1] b<Arg>     
@@ -75,6 +96,63 @@ local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1,
 0045 trace            16                                              (  37)
 0047 leave                                                            (  35)
 END
+
+    COMPARE_BYTECODE_MRI = <<CODE
+local table (size: 2, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a<Arg>     [ 1] b<Arg>     
+0000 trace            8                                               (  39)
+0002 trace            1                                               (  40)
+0004 getlocal_OP__WC__0 4
+0006 getlocal_OP__WC__0 3
+0008 opt_lt           <callinfo!mid:<, argc:1, ARGS_SIMPLE>, <callcache>
+0011 branchunless     19
+0013 trace            1                                               (  41)
+0015 putobject        -1
+0017 jump             38                                              (  40)
+0019 trace            1                                               (  42)
+0021 getlocal_OP__WC__0 4
+0023 getlocal_OP__WC__0 3
+0025 opt_gt           <callinfo!mid:>, argc:1, ARGS_SIMPLE>, <callcache>
+0028 branchunless     35
+0030 trace            1                                               (  43)
+0032 putobject_OP_INT2FIX_O_1_C_ 
+0033 jump             38                                              (  42)
+0035 trace            1                                               (  45)
+0037 putobject_OP_INT2FIX_O_0_C_ 
+0038 trace            16                                              (  47)
+0040 leave                                                            (  45)
+CODE
+
+    NAMED_COMPARE_BYTECODE_MRI = <<CODE
+local table (size: 3, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 3] a<Arg>     [ 2] b<Arg>     [ 1] n          
+0000 trace            8                                               (  49)
+0002 trace            1                                               (  50)
+0004 getlocal_OP__WC__0 5
+0006 getlocal_OP__WC__0 4
+0008 opt_lt           <callinfo!mid:<, argc:1, ARGS_SIMPLE>, <callcache>
+0011 branchunless     21
+0013 trace            1                                               (  51)
+0015 putobject        -1
+0017 setlocal_OP__WC__0 3
+0019 jump             44                                              (  50)
+0021 trace            1                                               (  52)
+0023 getlocal_OP__WC__0 5
+0025 getlocal_OP__WC__0 4
+0027 opt_gt           <callinfo!mid:>, argc:1, ARGS_SIMPLE>, <callcache>
+0030 branchunless     39
+0032 trace            1                                               (  53)
+0034 putobject_OP_INT2FIX_O_1_C_ 
+0035 setlocal_OP__WC__0 3
+0037 jump             44                                              (  52)
+0039 trace            1                                               (  55)
+0041 putobject_OP_INT2FIX_O_0_C_ 
+0042 setlocal_OP__WC__0 3
+0044 trace            1                                               (  57)
+0046 getlocal_OP__WC__0 3
+0048 trace            16                                              (  58)
+0050 leave                                                            (  57)
+CODE
 
     ADD_BYTECODE_RBX = <<END
 [2, 0, 2, [:a, :b]]
@@ -169,7 +247,7 @@ END
         [:push,     2       ],
         [:send,     :<,   1 ],
         [:not               ],
-        [:branch  , 12      ],
+        [:branch,   12      ],
         [:trace,    33      ],
         [:load,     :n      ],
         [:jump,     24      ],
@@ -186,6 +264,71 @@ END
         [:send,     :fib, 1 ],
         [:send,     :+,   1 ],
         [:trace,    37      ],
+        [:return            ]
+    ]
+
+    COMPARE_BYTECODE_RUBYJIT = [
+        [:arg,      0       ],
+        [:store,    :a      ],
+        [:arg,      1       ],
+        [:store,    :b      ],
+        [:trace,    39      ],
+        [:trace,    40      ],
+        [:load,     :a      ],
+        [:load,     :b      ],
+        [:send,     :<,   1 ],
+        [:not               ],
+        [:branch,   14      ],
+        [:trace,    41      ],
+        [:push,     -1      ],
+        [:jump,     25      ],
+        [:trace,    42      ],
+        [:load,     :a      ],
+        [:load,     :b      ],
+        [:send,     :>,   1 ],
+        [:not               ],
+        [:branch,   23      ],
+        [:trace,    43      ],
+        [:push,     1       ],
+        [:jump,     25      ],
+        [:trace,    45      ],
+        [:push,     0       ],
+        [:trace,    47      ],
+        [:return            ]
+    ]
+
+    NAMED_COMPARE_BYTECODE_RUBYJIT = [
+        [:arg,      0       ],
+        [:store,    :a      ],
+        [:arg,      1       ],
+        [:store,    :b      ],
+        [:trace,    49      ],
+        [:trace,    50      ],
+        [:load,     :a      ],
+        [:load,     :b      ],
+        [:send,     :<,   1 ],
+        [:not               ],
+        [:branch,   15      ],
+        [:trace,    51      ],
+        [:push,     -1      ],
+        [:store,    :n      ],
+        [:jump,     28      ],
+        [:trace,    52      ],
+        [:load,     :a      ],
+        [:load,     :b      ],
+        [:send,     :>,   1 ],
+        [:not               ],
+        [:branch,   25      ],
+        [:trace,    53      ],
+        [:push,     1       ],
+        [:store,    :n      ],
+        [:jump,     28      ],
+        [:trace,    55      ],
+        [:push,     0       ],
+        [:store,    :n      ],
+        [:trace,    57      ],
+        [:load,     :n      ],
+        [:trace,    58      ],
         [:return            ]
     ]
 

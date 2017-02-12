@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,17 +19,37 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/graphviz'
-require 'rubyjit/ir/builder'
-require 'rubyjit/passes/post_build'
-require 'rubyjit/passes/dead_code'
-require 'rubyjit/passes/no_choice_phis'
-require 'rubyjit/passes/runner'
+module RubyJIT
+  module Passes
+
+    # The runner contains a list of passes and runs them on a graph
+    # repeatedly until they have all run without modifying the graph.
+
+    class Runner
+
+      # Create a runner with a list of passes.
+
+      def initialize(*passes)
+        @passes = passes
+      end
+
+      # Run the passes on the graph until they have all run without
+      # needing to modify the graph. We say that they have reached
+      # a fix point.
+
+      def run(graph)
+        loop do
+          modified = false
+
+          @passes.each do |pass|
+            modified |= pass.run(graph)
+          end
+
+          break unless modified
+        end
+      end
+
+    end
+
+  end
+end

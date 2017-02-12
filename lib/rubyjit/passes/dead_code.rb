@@ -22,38 +22,28 @@
 module RubyJIT
   module Passes
 
-    # The post-build pass runs after the construction of a graph and tidies it
-    # up, removing nodes and edges that were just added as part of the
-    # construction as scaffolding and aren't actually needed when the graph
-    # has been connected up.
+    # An optimisation pass to remove dead code.
 
-    class PostBuild
+    class DeadCode
 
       def run(graph)
+        modified = false
+
         # Look at each node.
 
         graph.all_nodes.each do |n|
-          # Remove jump and input nodes, as after construction both of these
-          # are just going to sit on edges with one input and one output, and
-          # we might as well directly connect the nodes that they are between.
-          # Also remove merges that have only one control input.
+          # If the node has no users (no outputs) then it is dead - it's as simple
+          # as that. We have encoded side effects as a special kind of output, so
+          # we need no special logic so that we don't remove side effects. The only
+          # special case is for the finish node, which of course always has no users.
 
-          if [:jump, :input].include?(n.op) || (n.op == :merge && n.outputs.size == 1)
-            # For each input edge...
-
-            n.inputs.edges.each do |input|
-              # ...connect them to each output the node had.
-
-              n.outputs.edges.each do |output|
-                input.from.output_to input.output_name, output.to, output.input_name
-              end
-            end
-
-            # Then remove the node from the graph.
-
+          if n.outputs.empty? && n.op != :finish
             n.remove
+            modified |= true
           end
         end
+
+        modified
       end
 
     end

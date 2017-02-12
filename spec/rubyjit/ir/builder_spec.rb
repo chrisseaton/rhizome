@@ -141,8 +141,34 @@ describe RubyJIT::IR::Builder do
         @graph = @builder.graph
       end
 
-      it 'with a five send nodes' do
+      it 'with a six send nodes' do
         expect(@graph.all_nodes.count { |n| n.op == :send }).to eql 6
+      end
+
+    end
+
+    describe 'builds a compare function' do
+
+      before :each do
+        @builder.build(RubyJIT::Fixtures::COMPARE_BYTECODE_RUBYJIT)
+        @graph = @builder.graph
+      end
+
+      it 'with a two send nodes' do
+        expect(@graph.all_nodes.count { |n| n.op == :send }).to eql 2
+      end
+
+    end
+
+    describe 'builds a named compare function' do
+
+      before :each do
+        @builder.build(RubyJIT::Fixtures::NAMED_COMPARE_BYTECODE_RUBYJIT)
+        @graph = @builder.graph
+      end
+
+      it 'with a two send nodes' do
+        expect(@graph.all_nodes.count { |n| n.op == :send }).to eql 2
       end
 
     end
@@ -182,6 +208,22 @@ describe RubyJIT::IR::Builder do
     it 'only reports targets once' do
       expect(@builder.targets([[:jump, 0]])).to contain_exactly(0)
       expect(@builder.targets([[:arg, 0], [:branch, 3], [:jump, 3], [:self], [:return]])).to contain_exactly(0, 2, 3)
+    end
+
+    it 'works with a simple add function' do
+      expect(@builder.targets(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)).to contain_exactly(0)
+    end
+
+    it 'works with a fib function' do
+      expect(@builder.targets(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)).to contain_exactly(0, 9, 12, 24)
+    end
+
+    it 'works with a compare function' do
+      expect(@builder.targets(RubyJIT::Fixtures::COMPARE_BYTECODE_RUBYJIT)).to contain_exactly(0, 11, 14, 20, 23, 25)
+    end
+
+    it 'works with a compare function with local variables' do
+      expect(@builder.targets(RubyJIT::Fixtures::NAMED_COMPARE_BYTECODE_RUBYJIT)).to contain_exactly(0, 11, 15, 21, 25, 28)
     end
 
   end
