@@ -16,7 +16,7 @@ the bytecode to the graph.
 
 ### How it works
 
-We'll use this simple `fib` function as a working example for graph illustrating
+We'll use this simple `fib` function as a working example for illustrating graph
 construction:
 
 ```ruby

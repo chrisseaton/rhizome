@@ -61,6 +61,12 @@ module RubyJIT
         not inputs.empty?
       end
 
+      # Does this node produce a value?
+
+      def produces_value?
+        outputs.edges.any? { |e| e.names.include?(:value) }
+      end
+
       # Does this node have any control input?
 
       def has_control_input?
@@ -71,6 +77,24 @@ module RubyJIT
 
       def has_control_output?
         outputs.output_names.any? { |n| n.to_s.start_with?('control') }
+      end
+
+      # Is this node floating? As in, not fixed in an order except by data dependencies.
+
+      def floating?
+        not fixed?
+      end
+
+      # Is this node fixed? As in, fixed in an order except by data dependencies.
+
+      def fixed?
+        has_control_input? || has_control_output?
+      end
+
+      # Does this node begin a basic block?
+
+      def begins_block?
+        op == :start || op == :merge || inputs.control_edges.from_nodes.any? { |i| i.op == :branch }
       end
 
       # Pretty print the node for debugging.
@@ -120,6 +144,12 @@ module RubyJIT
         names.any? { |n| n.to_s.start_with?('control') }
       end
 
+      # Is this a schedule edge?
+
+      def schedule?
+        names.any? { |n| n.to_s.end_with?('schedule') }
+      end
+
       # Remove an edge by removing the references from the nodes to it.
 
       def remove
@@ -162,6 +192,12 @@ module RubyJIT
 
       def with_input_name(name)
         EdgeSet.new(edges.select { |e| e.input_name == name })
+      end
+
+      # Get all the control-flow edges.
+
+      def control_edges
+        EdgeSet.new(edges.select(&:control?))
       end
 
       # Get all the nodes referenced from these edges.

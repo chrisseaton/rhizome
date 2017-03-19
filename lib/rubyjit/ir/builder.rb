@@ -382,7 +382,7 @@ module RubyJIT
             when :send
               name = insn[1]
               argc = insn[2]
-              send_node = Node.new(:send, name: name)
+              send_node = Node.new(:send, name: name, argc: argc)
               argc.times do |n|
                 arg_node = pop.call
                 arg_node.output_to :value, send_node, :"arg(#{argc-n-1})"

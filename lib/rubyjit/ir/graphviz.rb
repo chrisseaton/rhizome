@@ -98,7 +98,7 @@ module RubyJIT
             # in the order shown. But we don't store them like that
             # internally, so swap them around here.
 
-            unless edge.control?
+            unless edge.control? || edge.schedule?
               attrs[:dir] = 'back'
             end
 
@@ -117,6 +117,22 @@ module RubyJIT
             if node.op == :merge && edge.to.op == :phi
               attrs[:style] = 'dashed'
             end
+
+            # Global schedule edges are dark green.
+
+            if edge.input_name == :global_schedule
+              attrs[:color] = 'darkgreen'
+              attrs[:style] = 'dashed'
+            end
+
+            # Local schedule edges are dark green and dashed.
+
+            if edge.input_name == :local_schedule
+              attrs[:color] = 'darkgreen'
+              attrs[:constraint] = 'false'
+            end
+
+            # Combine all the attributes.
 
             attr_s = attrs.reject { |k, v| v.nil? }.map { |k,v| "#{k}=\"#{v}\"" }.join(', ')
 
@@ -163,16 +179,24 @@ module RubyJIT
       def node_label(node)
         case node.op
           when :arg
-            "arg(#{node.props[:n]})"
+            label = "arg(#{node.props[:n]})"
           when :send
-            '#' + node.props[:name].to_s
+            label = '#' + node.props[:name].to_s
           when :trace
-            "trace(#{node.props[:line]})"
+            label = "trace(#{node.props[:line]})"
           when :constant
-            "const(#{node.props[:value]})"
+            label = "const(#{node.props[:value]})"
           else
-            node.op.to_s
+            label = node.op.to_s
         end
+
+        sequence = node.props[:sequence]
+        label += " ↓#{sequence}" if sequence
+
+        register = node.props[:register]
+        label += " →#{register}" if register
+
+        label
       end
       
       # The label to use for a given edge. Many edges pass only control or the
@@ -182,12 +206,13 @@ module RubyJIT
       def edge_label(edge)
         all_control = edge.names.all? { |n| n == :control}
         any_control = edge.names.any? { |n| n == :control}
+        all_schedule = edge.names.all? { |n| [:global_schedule, :local_schedule].include?(n)}
         all_value = edge.names.all? { |n| n == :value}
         any_value = edge.names.any? { |n| n == :value}
         merge_or_phi = [:merge, :phi].include?(edge.to.op)
         merge_to_phi = edge.from.op == :merge && edge.to.op == :phi
 
-        if ((all_control || all_value) && !merge_or_phi) || merge_to_phi
+        if ((all_control || all_value) && !merge_or_phi) || merge_to_phi || all_schedule
           nil
         elsif [:merge, :phi].include?(edge.to.op)
           edge.input_name =~ /\w+\((\d+)\)/

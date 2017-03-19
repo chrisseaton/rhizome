@@ -8,7 +8,7 @@ allocate our own native memory to store machine code because the processor will
 only execute code in memory with the executable permission, and higher level
 languages like Ruby don't give us anything to set memory permissions.
 
-We implement our memory system using the sysetm calls `mmap`, `mprotect`, and
+We implement our memory system using the system calls `mmap`, `mprotect`, and
 `munmap`, which we call using the different foreign function interfaces of the
 implementations of Ruby on which we run.
 
