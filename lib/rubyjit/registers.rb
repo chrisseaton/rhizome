@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,19 +19,29 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/graphviz'
-require 'rubyjit/ir/builder'
-require 'rubyjit/passes/post_build'
-require 'rubyjit/passes/dead_code'
-require 'rubyjit/passes/no_choice_phis'
-require 'rubyjit/passes/runner'
-require 'rubyjit/scheduler'
-require 'rubyjit/registers'
+module RubyJIT
+
+  # The register allocator annotates nodes in a graph which produce a value
+  # with either the name of a register or a memory location in which the
+  # value will be stored.
+
+  class RegisterAllocator
+
+    # The infinite allocator is a tool for demonstrations and writing tests
+    # which puts each value into a unique register, without worrying about how
+    # many registers this will need or whether we could reuse registers already
+    # used for a value that is no longer needed.
+
+    def allocate_infinite(graph)
+      n = 0
+      graph.all_nodes.each do |node|
+        if node.produces_value?
+          node.props[:register] = :"r#{n}"
+          n += 1
+        end
+      end
+    end
+
+  end
+
+end

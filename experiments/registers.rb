@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,19 +19,30 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/graphviz'
-require 'rubyjit/ir/builder'
-require 'rubyjit/passes/post_build'
-require 'rubyjit/passes/dead_code'
-require 'rubyjit/passes/no_choice_phis'
-require 'rubyjit/passes/runner'
-require 'rubyjit/scheduler'
-require 'rubyjit/registers'
+# Illustrates allocating registers to values.
+
+require_relative '../lib/rubyjit'
+require_relative '../spec/rubyjit/fixtures'
+
+builder = RubyJIT::IR::Builder.new
+builder.build RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT
+graph = builder.graph
+
+postbuild = RubyJIT::Passes::PostBuild.new
+postbuild.run graph
+
+phases_runner = RubyJIT::Passes::Runner.new(
+    RubyJIT::Passes::DeadCode.new,
+    RubyJIT::Passes::NoChoicePhis.new
+)
+
+phases_runner.run graph
+
+scheduler = RubyJIT::Scheduler.new
+scheduler.schedule graph
+
+registers = RubyJIT::RegisterAllocator.new
+registers.allocate_infinite graph
+
+viz = RubyJIT::IR::Graphviz.new(graph)
+viz.visualise 'infinite-registers.pdf'
