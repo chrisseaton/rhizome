@@ -152,6 +152,61 @@ quite hard to read, with a lot of information in these edges:
 
 ![local scheduling](scheduler/local.png)
 
+#### Linearization
+
+The scheduler is also responsible for linearization of the graph, although this
+operation is usually run later, after phases described in other documents.
+Linearization takes the a scheduled graph and produces a linear sequence of
+instructions. It's like the opposite of graph building.
+
+Linearization does the work of understanding how the graph has been scheduled
+and produces a simple list of instructions that the assembler can use to produce
+machine code.
+
+For the graphs above, the result of linearization is a sequence of instructions.
+Branch and merge nodes have been transformed to fit the linear format, becoming
+`jump` instructions for unconditional jumps, and `branch_if` and `branch_unless`
+instructions for conditional branches with fallthrough based on the order in
+which the basic blocks have been linearized.
+
+Basic blocks are linearized in the order in which they are found when traversing
+the graph depth-first, except that the block with the `start` node always comes
+first and the block with the `finish` node always comes last. `finish` is
+renamed `return` to represent the change from the declarative representation of
+the graph to the imperative one of a list of instructions.
+
+```
+  trace 31
+  trace 32
+  constant r0 2
+  arg r1 0
+  send r12 r1 < r0
+  not r13 r12
+  branch_if r13 2
+block1:
+  trace 33
+  jump 3
+block2:
+  trace 35
+  self r3
+  constant r4 2
+  self r5
+  constant r6 1
+  send r7 r1 - r6
+  send r8 r5 fib r7
+  send r11 r1 - r4
+  send r10 r3 fib r11
+  send r9 r8 + r10
+block3:
+  trace 37
+  phi r2 block2 r9 block1 r1
+  return r2
+```
+
+In this example we're still showing the high level operations such as `send` and
+`phi` operations. The normal use of the linearizer is to lower to machine-level
+operations before linearization.
+
 ### More technical details
 
 Less seems to be written about scheduling than even the rest of compilers. We
@@ -175,3 +230,8 @@ any compilers.
 
 * Implement splitting to allow expensive computations to be scheduled later
   when they are used on more than one but not all branches.
+* Make a better decision about the order to emit basic blocks in the
+  linearizer. At the moment it is just as they are found when traversing the
+  graph depth-first. Processors normally predict forward branches to be not
+  taken if they have no other information, so we should try to match that
+  expectation.

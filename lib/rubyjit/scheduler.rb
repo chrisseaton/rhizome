@@ -332,6 +332,196 @@ module RubyJIT
       node.fixed? || node.outputs.output_names.include?(:local_schedule)
     end
 
+    # Linearize a graph into a single linear sequence of operations with jumps
+    # and branches.
+
+    def linearize(graph)
+      # The basic blocks.
+      blocks = []
+      
+      # Details of the basic block that contain the finish operation which
+      # won't be added to the list of basic blocks until the end.
+      first_node_last_block = nil
+      last_block = nil
+      
+      # Two maps that help us map between nodes and the names of the blocks
+      # that they go into, and the merge instruction indicies and the blocks
+      # they're coming from.
+      first_node_to_block_index = {}
+      merge_index_to_first_node = {}
+
+      # Look at each node that begins a basic block.
+
+      graph.all_nodes.each do |node|
+        if node.begins_block?
+          first_node = node
+
+          # We're going to create an array of operations for this basic
+          # block.
+
+          block = []
+          next_to_last = nil
+
+          # Follow the local sequence.
+          
+          begin
+            # We don't want to include operations that are just there to form
+            # branches or anchor points in the graph such as start and merge.
+
+            unless [:start, :merge].include?(node.op)
+              op = node.op
+
+              # We rename finish to return to match the switch from the
+              # declarative style of the graph to the imperative style
+              # of the list of operations.
+              op = :return if op == :finish
+
+              # The instruction begins with the operation.
+              insn = [op]
+
+              # Then the target register if the instruction has one.
+              insn.push node.props[:register] if node.produces_value?
+
+              # Then any constant values or similar.
+              [:line, :n, :value].each do |p|
+                insn.push node.props[p] if node.props.has_key?(p)
+              end
+
+              # Then any input registers.
+              node.inputs.with_input_name(:value).from_nodes.each do |input_values|
+                insn.push input_values.props[:register]
+              end
+
+              # If it's a branch the target basic blocks.
+              if node.op == :branch
+                insn.push node.inputs.with_input_name(:condition).from_nodes.first.props[:register]
+                [:true, :false].each do |branch|
+                  insn.push node.outputs.with_output_name(branch).to_nodes.first
+                end
+              end
+
+              # Phi instructions need pairs of source registers with the blocks they came from.
+              if node.op == :phi
+                node.inputs.edges.each do |input|
+                  if input.input_name =~ /^value\((\d+)\)$/
+                    n = $1.to_i
+                    insn.push n
+                    insn.push input.from.props[:register]
+                  end
+                end
+              end
+
+              # Send instructions need the arguments.
+              if node.op == :send
+                insn.push node.inputs.with_input_name(:receiver).from_nodes.first.props[:register]
+                insn.push node.props[:name]
+
+                node.props[:argc].times do |n|
+                  insn.push node.inputs.with_input_name(:"arg(#{n})").from_nodes.first.props[:register]
+                end
+              end
+
+              # Add the instruction to the block.
+              block.push insn
+            end
+            
+            next_to_last = node
+
+            # Follow the local schedule edge to the next node.
+            node = node.outputs.with_output_name(:local_schedule).to_nodes.first
+          end while node && node.op != :merge
+
+          # If the last node is a merge, we need to remember which merge index this is.
+
+          if node && node.op == :merge
+            next_to_last.outputs.with_output_name(:control).edges.first.input_name =~ /^control\((\d+)\)$/
+            n = $1.to_i
+            merge_index_to_first_node[n] = first_node
+          end
+
+          # Add a jump instruction if this block was going to just flow into the next
+          # - we'll remove it later if the block followed it anyway and we can just
+          # fallthrough.
+
+          unless [:return, :branch].include?(block.last.first)
+            raise unless node.op == :merge
+            block.push [:jump, node]
+          end
+
+          # If this block ends with the return instruction then we need to keep it
+          # for last, otherwise add the block to the list of blocks.
+
+          if block.last.first == :return
+            first_node_last_block = first_node
+            last_block = block
+          else
+            first_node_to_block_index[first_node] = blocks.size
+            blocks.push block
+          end
+        end
+      end
+
+      # Record the number that this basic block has and then add it to the list of basic blocks.
+
+      first_node_to_block_index[first_node_last_block] = blocks.size
+      blocks.push last_block
+
+      # Go back through the basic blocks and update some references that were to things that
+      # hadn't been decided yet.
+
+      blocks.each do |block|
+        block.each do |insn|
+          insn.map! do |e|
+            # If part of an instruction references a basic block, turn that into the index of
+            # the basic block instead.
+
+            if e.is_a?(IR::Node)
+              first_node_to_block_index[e]
+            else
+              e
+            end
+          end
+
+          if insn.first == :phi
+            n = 2
+            while n < insn.size
+              insn[n] = :"block#{first_node_to_block_index[merge_index_to_first_node[insn[n]]]}"
+              n += 2
+            end
+          end
+        end
+      end
+
+      # Go back through the basic blocks and change how the branch instructions out of them
+      # work.
+
+      blocks.each_with_index do |block, n|
+        next_block = n + 1
+        last = block.last
+
+        if last.first == :jump && last.last == next_block
+          # A jump that just goes to the next block can be removed and left to fall through.
+          block.pop
+        elsif last.first == :branch && last[-1] == next_block
+          # A branch where the else goes to the next block can branch only when true.
+          block.pop
+          block.push [:branch_if, last[1], last[-2]]
+        elsif last.first == :branch && last[-2] == next_block
+          # A branch where the if goes to the next block can branch only unless true.
+          block.pop
+          block.push [:branch_unless, last[1], last[-1]]
+        elsif last.first == :branch
+          # A branch that doesn't go to the next block at all can be a branch if true
+          # and then fallthrough to a new jump instruction.
+          block.pop
+          block.push [:branch_if, last[1], last[-2]]
+          block.push [:jump, last[-1]]
+        end
+      end
+
+      blocks
+    end
+
   end
 
 end

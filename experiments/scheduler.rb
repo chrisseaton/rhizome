@@ -53,3 +53,16 @@ scheduler.local_schedule graph
 
 viz = RubyJIT::IR::Graphviz.new(graph)
 viz.visualise 'local.pdf'
+
+register_allocator = RubyJIT::RegisterAllocator.new
+register_allocator.allocate_infinite graph
+
+blocks = scheduler.linearize(graph)
+
+blocks.each_with_index do |block, n|
+  puts "block#{n}:" unless n == 0
+
+  block.each do |insn|
+    puts "  #{insn.map(&:to_s).join(' ')}"
+  end
+end

@@ -134,8 +134,45 @@ describe RubyJIT::Scheduler do
       end
 
     end
+    
+  end
+
+  describe '#linearize' do
+
+    before :each do
+      @builder.build RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT
+      @postbuild = RubyJIT::Passes::PostBuild.new
+      @postbuild.run @graph
+      @scheduler.schedule @graph
+      @register_allocator = RubyJIT::RegisterAllocator.new
+      @register_allocator.allocate_infinite @graph
+      @blocks = @scheduler.linearize(@graph)
+    end
+
+    it 'produces an array of arrays of instructions' do
+      expect(@blocks).to be_an(Array)
+    end
+
+    it 'has the block with the start instruction first' do
+      expect(@blocks.first.first).to contain_exactly(:trace, 31)
+    end
+
+    it 'has the block with the finish instruction last' do
+      expect(@blocks.last.first).to contain_exactly(:trace, 37)
+    end
+
+    it 'renames finish to return' do
+      expect(@blocks.last.last).to start_with(:return)
+    end
+
+    describe 'for a fib function' do
+
+      it 'produces four basic blocks' do
+        expect(@blocks.size).to eql 4
+      end
+
+    end
 
   end
 
 end
-
