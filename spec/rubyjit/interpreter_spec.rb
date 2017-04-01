@@ -59,7 +59,7 @@ describe RubyJIT::Interpreter do
       ]
 
       states.each do |ip, stack, locals|
-        expect(@interpreter.interpret(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, receiver, [14, 2], ip, stack, locals)).to eql 16
+        expect(@interpreter.interpret(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, receiver, [14, 2], nil, ip, stack, locals)).to eql 16
       end
     end
 
@@ -95,7 +95,7 @@ describe RubyJIT::Interpreter do
       ]
 
       states.each do |ip, stack, locals|
-        expect(@interpreter.interpret(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, receiver, [10], ip, stack, locals)).to eql 55
+        expect(@interpreter.interpret(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, receiver, [10], nil, ip, stack, locals)).to eql 55
       end
     end
 

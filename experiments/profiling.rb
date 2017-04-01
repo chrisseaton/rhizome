@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,20 +19,39 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/profile'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/graphviz'
-require 'rubyjit/ir/builder'
-require 'rubyjit/passes/post_build'
-require 'rubyjit/passes/dead_code'
-require 'rubyjit/passes/no_choice_phis'
-require 'rubyjit/passes/runner'
-require 'rubyjit/scheduler'
-require 'rubyjit/registers'
+# Illustrates how the interpreter can profile your Ruby program.
+
+require_relative '../lib/rubyjit'
+require_relative '../spec/rubyjit/fixtures'
+
+# We run run the interpreter normally...
+
+def fib(n)
+  if n < 2
+    n
+  else
+    fib(n - 1) + fib(n - 2)
+  end
+end
+
+interpreter = RubyJIT::Interpreter.new
+
+100.times do
+  interpreter.interpret(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [10])
+end
+
+# Or we can run with a profile...
+
+profile = RubyJIT::Profile.new
+
+100.times do
+  interpreter.interpret(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [10], profile)
+end
+
+# This profile will then be able to give us information about what your
+# program did at runtime, giving us more information than we would be
+# able to determine statically.
+
+profile.sends.each_value do |profile|
+  puts profile
+end

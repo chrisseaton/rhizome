@@ -25,7 +25,7 @@ module RubyJIT
   
   class Interpreter
     
-    def interpret(insns, receiver, args, ip=0, stack=[], locals={})
+    def interpret(insns, receiver, args, profiler=nil, ip=0, stack=[], locals={})
       # Loop through instructions.
       
       loop do
@@ -59,6 +59,7 @@ module RubyJIT
               send_args.push stack.pop
             end
             send_receiver = stack.pop
+            profiler.profile_send(ip, send_receiver, send_args) if profiler
             stack.push send_receiver.send(send_name, *send_args)
             ip += 1
           when :not
