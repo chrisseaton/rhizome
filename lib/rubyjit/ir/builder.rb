@@ -36,7 +36,7 @@ module RubyJIT
 
       # Build takes the array of instructions and adds them to the graph.
 
-      def build(insns)
+      def build(insns, profile=nil)
         # Find the basic blocks in the instructions.
 
         blocks = basic_blocks(insns)
@@ -45,8 +45,8 @@ module RubyJIT
 
         fragments = {}
 
-        blocks.each_value do |block|
-          fragments[block.start] = basic_block_to_fragment(block.insns)
+        blocks.each do |ip, block|
+          fragments[block.start] = basic_block_to_fragment(block.insns, ip, profile)
         end
 
         # Create more detailed, transitive, input and output names and stacks for each fragment.
@@ -297,7 +297,7 @@ module RubyJIT
 
       # Convert one basic block to a fragment of graph.
 
-      def basic_block_to_fragment(insns)
+      def basic_block_to_fragment(insns, ip=0, profile=nil)
         # Basic blocks start with a merge node.
 
         merge = Node.new(:merge)
@@ -349,7 +349,7 @@ module RubyJIT
         # through the instructions by linking each instruction that has some
         # kind of side effect to the previous instruction with a side effect.
 
-        insns.each do |insn|
+        insns.each_with_index do |insn, n|
           case insn.first
             when :trace
               last_node = Node.new(:trace, line: insn[1])
@@ -389,6 +389,9 @@ module RubyJIT
               end
               receiver_node = pop.call
               receiver_node.output_to :value, send_node, :receiver
+              if profile
+                send_node.props[:profile] = profile.sends[ip + n]
+              end
               stack.push send_node
               last_node = send_node
             when :not

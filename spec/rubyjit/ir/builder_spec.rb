@@ -173,6 +173,48 @@ describe RubyJIT::IR::Builder do
 
     end
 
+    describe 'adds profiling information from the interpreter into a fib function' do
+
+      before :each do
+        @interpreter = RubyJIT::Interpreter.new
+        @profile = RubyJIT::Profile.new
+        @interpreter.interpret(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [10], @profile)
+        @builder.build(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, @profile)
+        @graph = @builder.graph
+      end
+
+      it 'with the send nodes having profiles' do
+        @graph.all_nodes.each do |node|
+          if node.op == :send
+            expect(node.props.keys).to include(:profile)
+          end
+        end
+      end
+
+      it 'with the fib send nodes being profiled to a Module and a fixnum' do
+        @graph.all_nodes.each do |node|
+          if node.op == :send && node.props[:name] == :fib
+            profile = node.props[:profile]
+            expect(profile.receiver_kinds).to contain_exactly(Module)
+            expect(profile.args_kinds.size).to eql 1
+            expect(profile.args_kinds[0]).to contain_exactly(:fixnum)
+          end
+        end
+      end
+
+      it 'with the add send nodes being profiled to a fixnum and a fixnum' do
+        @graph.all_nodes.each do |node|
+          if node.op == :send && node.props[:name] == :+
+            profile = node.props[:profile]
+            expect(profile.receiver_kinds).to contain_exactly(:fixnum)
+            expect(profile.args_kinds.size).to eql 1
+            expect(profile.args_kinds[0]).to contain_exactly(:fixnum)
+          end
+        end
+      end
+
+    end
+
   end
 
   describe '#targets' do
