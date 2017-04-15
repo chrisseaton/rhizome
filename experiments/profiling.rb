@@ -37,7 +37,7 @@ end
 interpreter = RubyJIT::Interpreter.new
 
 100.times do
-  interpreter.interpret(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [10])
+  interpreter.interpret RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [10]
 end
 
 # Or we can run with a profile...
@@ -45,7 +45,7 @@ end
 profile = RubyJIT::Profile.new
 
 100.times do
-  interpreter.interpret(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [10], profile)
+  interpreter.interpret RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [10], profile
 end
 
 # This profile will then be able to give us information about what your

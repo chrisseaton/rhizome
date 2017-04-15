@@ -2,16 +2,16 @@
 
 ## Graph visualisation
 
-Compilers often work with trees - you've probably heard of abstract syntax trees -
-or they try to keep data structures as linear as possible, which is one property
-of the basic blocks in traditional bytecode and two- or three-address format
-intermediate representations. One advantage of this is that trees and linear
-data structures can be relatively easily pretty-printed as text for
-understanding and debugging the compiler. RubyJIT uses a graphical intermediate
-representation, which is not as easy to print out as text. The sea-of-nodes
-approach that RubyJIT uses means we have particularly complex graphs. RubyJIT
-therefore includes a tool to write out compiler graphs in a format for the
-[Graphviz graph visualisation program](http://www.graphviz.org).
+Compilers often work with simple trees - you've probably heard of abstract
+syntax trees - or they try to keep data structures as linear as possible, which
+is one property of the basic blocks in traditional bytecode and two- or
+three-address format intermediate representations. One advantage of this is that
+trees and linear data structures can be relatively easily pretty-printed as text
+for understanding and debugging the compiler. RubyJIT uses a graphical
+intermediate representation, which is not as easy to print out as text. The
+sea-of-nodes approach that RubyJIT uses means we have particularly complex
+graphs. RubyJIT therefore includes a tool to write out compiler graphs in a
+format for the [Graphviz graph visualisation program](http://www.graphviz.org).
 
 ### Why we need it
 

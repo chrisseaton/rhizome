@@ -231,7 +231,7 @@ name into edges in the same way.
 
 ![graph of a compare function with local variables](ir/named-compare.png)
 
-Note that we've run a couple of optimisation phases, which are explained later
+Note that we've run a couple of optimisation passes, which are explained later
 in another document, to tidy up the graphs shown above after they have been
 constructed.
 

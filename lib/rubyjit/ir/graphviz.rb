@@ -182,6 +182,10 @@ module RubyJIT
             label = "arg(#{node.props[:n]})"
           when :send
             label = '#' + node.props[:name].to_s
+            label += ' (mega)' if node.props[:megamorphic]
+            label = node.props[:kind].to_s + label + ' (mono)' if node.props[:kind]
+          when :kind_is?
+            label = "kind_is?(#{node.props[:kind]})"
           when :trace
             label = "trace(#{node.props[:line]})"
           when :constant
@@ -215,7 +219,7 @@ module RubyJIT
         if ((all_control || all_value) && !merge_or_phi) || merge_to_phi || all_schedule
           nil
         elsif [:merge, :phi].include?(edge.to.op)
-          edge.input_name =~ /\w+\((\d+)\)/
+          edge.input_name =~ /\w+\((.+)\)/
           $1.to_s
         elsif any_control || any_value
           edge.names.reject { |n| [:control, :value].include?(n) }.first

@@ -29,28 +29,35 @@ next instruction is, performing its action, and then setting the instruction
 pointer to the next instruction.
 
 ```ruby
-    def interpret(insns)
+def interpret(insns)
+  ...
+  loop do
+    insn = insns[ip]
+    case insn.first
       ...
-      loop do
-        insn = insns[ip]
-        case insn.first
-          ...
-          when :load
-            stack.push locals[insn[1]]
-            ip += 1
-          ...
-          when :store
-            locals[insn[1]] = stack.pop
-            ip += 1
-          ...
-        end
-      end
+      when :load
+        stack.push locals[insn[1]]
+        ip += 1
+      ...
+      when :store
+        locals[insn[1]] = stack.pop
+        ip += 1
+      ...
     end
+  end
+end
 ```
 
 #### Profiling
 
-The interpreter can be passed a profile object, which stores information about what the code is doing in practice. For example, we profile the kinds of the receiver and the arguments to each `send` instruction. I say 'kind' rather than 'class', which is a word used in different ways to express abstractions of class or types, because really we capture a little more information than just the Ruby class. For the `Integer` class we capture whether the value is a tagged pointer (a `Fixnum` in Ruby 2.3 terminology) or an unbounded integer (a `Bignum` in 2.3).
+The interpreter can be passed a profile object, which stores information about
+what the code is doing in practice. For example, we profile the kinds of the
+receiver and the arguments to each `send` instruction. I say *kind* rather than
+*class*, which is a word used in different ways to express abstractions of class
+or types, because really we capture a little more information than just the Ruby
+class. For the `Integer` class we capture whether the value is a tagged pointer
+(a `Fixnum` in Ruby 2.3 terminology) or an unbounded integer (a `Bignum` in
+2.3).
 
 If we run the interpreter on a simple `fib` function which looks like this:
 

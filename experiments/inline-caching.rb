@@ -1,4 +1,4 @@
-# Copyright (c) 2016-2017 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,19 +19,24 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# Prints a graph for a compare function with local variables to demonstrate how they turn into edges.
+# Illustrates building inline caches for method calls in the graph.
 
 require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
+interpreter = RubyJIT::Interpreter.new
+profile = RubyJIT::Profile.new
+
+100.times do
+  interpreter.interpret RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [14, 2], profile
+end
+
 builder = RubyJIT::IR::Builder.new
-builder.build RubyJIT::Fixtures::NAMED_COMPARE_BYTECODE_RUBYJIT
+builder.build RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, profile
 graph = builder.graph
 
-postbuild = RubyJIT::Passes::PostBuild.new
-postbuild.run graph
-
 passes_runner = RubyJIT::Passes::Runner.new(
+    RubyJIT::Passes::PostBuild.new,
     RubyJIT::Passes::DeadCode.new,
     RubyJIT::Passes::NoChoicePhis.new
 )
@@ -39,4 +44,13 @@ passes_runner = RubyJIT::Passes::Runner.new(
 passes_runner.run graph
 
 viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'named-compare.pdf'
+viz.visualise 'before.pdf'
+
+passes_runner = RubyJIT::Passes::Runner.new(
+    RubyJIT::Passes::InlineCaching.new,
+)
+
+passes_runner.run graph
+
+viz = RubyJIT::IR::Graphviz.new(graph)
+viz.visualise 'after.pdf'
