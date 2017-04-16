@@ -36,12 +36,13 @@ module RubyJIT
       attr_reader :finish
 
       def initialize
-        # Create the start and finish nodes and say that the start node has to
-        # run before the finish node by creating a control edge between them.
+        # Create the start and finish nodes. We would create a control edge to
+        # say that the start node has to run before the finish node, but when
+        # any other control flow is added this just becomes redundant and
+        # complicates the graphs. Create it yourself if you need it.
 
         @start = Node.new(:start)
         @finish = Node.new(:finish)
-        start.output_to(:control, finish)
       end
 
       # Yield to a block for each node in the graph.
