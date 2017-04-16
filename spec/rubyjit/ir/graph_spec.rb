@@ -103,6 +103,33 @@ describe RubyJIT::IR::Graph do
 
   end
 
+  describe '#find_nodes' do
+
+    it 'can be used to find a single node' do
+      found = @add_graph.find_nodes do |node|
+        node.op == :constant
+      end
+      expect(found.size).to eql 1
+      expect(found.first.op).to eql :constant
+    end
+
+    it 'returns an empty array if no node is found' do
+      found = @add_graph.find_nodes do |node|
+        node.op == :does_not_exist
+      end
+      expect(found).to be_empty
+    end
+
+    it 'takes an optional op filter' do
+      found = @add_graph.find_nodes(:constant) do |node|
+        node.props[:value] == 14
+      end
+      expect(found.size).to eql 1
+      expect(found.first.op).to eql :constant
+    end
+
+  end
+
   describe '#size' do
 
     it 'returns the number of nodes in the graph' do

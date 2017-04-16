@@ -47,6 +47,10 @@ module RubyJIT
       # other node has its own name for its input value.
 
       def output_to(output_name, to, input_name=output_name)
+        # We never want to connect a node to itself.
+        
+        raise if to == self
+
         edge = Edge.new(self, output_name, to, input_name)
 
         # The operation is symmetrical - both nodes get the edge added.
@@ -116,7 +120,7 @@ module RubyJIT
       # the current node, and a node which now produces the value that was
       # previously coming from this node.
 
-      def replace(start, finish, users, value)
+      def replace(start, finish=start, users=[start], value=finish)
         inputs.edges.each do |edge|
           if edge.control?
             edge.from.output_to edge.output_name, start, edge.input_name

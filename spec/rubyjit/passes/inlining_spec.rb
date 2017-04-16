@@ -23,12 +23,12 @@ require 'set'
 
 require 'rubyjit'
 
-describe RubyJIT::Passes::InlineCaching do
+describe RubyJIT::Passes::Inlining do
 
   before :each do
     @graph = RubyJIT::IR::Graph.new
     @postbuild_pass = RubyJIT::Passes::PostBuild.new
-    @pass = RubyJIT::Passes::InlineCaching.new
+    @pass = RubyJIT::Passes::Inlining.new
   end
 
   describe '#run' do
@@ -46,28 +46,27 @@ describe RubyJIT::Passes::InlineCaching do
       expect(@graph.find_node(:send).props[:megamorphic]).to be_nil
     end
 
-    describe 'branches a send node with profiling information' do
+    describe 'branches a fixnum#+ send' do
 
       before :each do
         receiver = RubyJIT::IR::Node.new(:constant, 14)
-        send = RubyJIT::IR::Node.new(:send, name: :foo, argc: 0)
-        send.props[:profile] = RubyJIT::Profile::SendProfile.new(0, Set.new([:k]), [])
+        operand = RubyJIT::IR::Node.new(:constant, 2)
+        send = RubyJIT::IR::Node.new(:send, name: :+, argc: 1, kind: :fixnum)
+        send.props[:profile] = RubyJIT::Profile::SendProfile.new(0, Set.new([:fixnum]), [Set.new([:fixnum])])
         receiver.output_to :value, send, :receiver
+        operand.output_to :value, send, :'arg(0)'
         @graph.start.output_to :control, send
         send.output_to :control, @graph.finish
       end
 
-      it 'to create a branch and merge with two send nodes' do
+      it 'a primitive op and megamorphic send' do
         @pass.run @graph
-        sends = []
-        @graph.visit_nodes do |node|
-          if node.op == :send
-            sends.push node
-            expect(node.props[:name]).to eql :foo
-            expect(node.props[:megamorphic] || node.props[:kind] == :k).to be_truthy
-          end
-        end
-        expect(sends.size).to eql 2
+        primitive = @graph.find_node(:fixnum_add)
+        expect(primitive).to_not be_nil
+        mega = @graph.find_node(:send)
+        expect(mega).to_not be_nil
+        expect(mega.props[:name]).to eql :+
+        expect(mega.props[:megamorphic]).to be_truthy
         expect(@graph.find_node(:branch)).to_not be_nil
         expect(@graph.find_node(:merge)).to_not be_nil
       end

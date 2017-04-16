@@ -102,14 +102,16 @@ module RubyJIT
               attrs[:dir] = 'back'
             end
 
-            # We connector edges as orange.
+            # We connector edges as orange...
 
-            if node.op == :connector
+            if node.op == :connector || edge.to.op == :connector
               attrs[:color] = 'orange'
+            end
 
-              # ...and dash it if it has not been connected yet.
+            # ...and dash it if it has not been connected yet.
 
-              attrs[:style] = 'dashed' unless node.has_input?
+            if node.op == :connector && !node.has_input?
+              attrs[:style] = 'dashed'
             end
 
             # The edge from the merge to a phi is dashed.

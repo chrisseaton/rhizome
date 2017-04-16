@@ -41,13 +41,14 @@ module RubyJIT
           # Also remove merges that have only one control input.
 
           if [:jump, :connector].include?(n.op) || (n.op == :merge && n.outputs.size == 1)
-            # For each input edge...
+            # For each input edge connect them to each output the node had,
+            # separating control and data edges.
 
             n.inputs.edges.each do |input|
-              # ...connect them to each output the node had.
-
               n.outputs.edges.each do |output|
-                input.from.output_to input.output_name, output.to, output.input_name
+                if input.control? == output.control?
+                  input.from.output_to dominant_name(input.output_name, output.output_name), output.to, dominant_name(input.input_name, output.input_name)
+                end
               end
             end
 
@@ -59,6 +60,18 @@ module RubyJIT
         end
 
         modified
+      end
+
+      # We often have two edges passing through a connection node, where one
+      # name is important and means something specific and the other one is
+      # something generic like control or value. This method returns the
+      # important one.
+
+      def dominant_name(*names)
+        %i(true false).each do |d|
+          return d if names.include?(d)
+        end
+        names.last
       end
 
     end
