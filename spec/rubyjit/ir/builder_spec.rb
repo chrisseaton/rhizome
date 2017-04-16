@@ -528,7 +528,7 @@ describe RubyJIT::IR::Builder do
       it 'requiring a name' do
         expect(@fragment.names_in.size).to eql 1
         expect(@fragment.names_in.keys.first).to eql :n
-        expect(@fragment.names_in.values.first.op).to eql :input
+        expect(@fragment.names_in.values.first.op).to eql :connector
       end
 
       it 'not requiring anything from the stack' do
@@ -581,7 +581,7 @@ describe RubyJIT::IR::Builder do
       it 'requiring a name' do
         expect(@fragment.names_in.size).to eql 1
         expect(@fragment.names_in.keys.first).to eql :n
-        expect(@fragment.names_in.values.first.op).to eql :input
+        expect(@fragment.names_in.values.first.op).to eql :connector
       end
 
       it 'not requiring anything from the stack' do
@@ -615,9 +615,9 @@ describe RubyJIT::IR::Builder do
             :sub_two, ->(n) { n.op == :send && n.props[:name] == :- && n.inputs.with_input_name(arg0).from_nodes.first.props[:value] == 2 },
             :fib_two, ->(n) { n.op == :send && n.props[:name] == :fib && n.inputs.with_input_name(arg0).from_nodes.first.inputs.with_input_name(arg0).from_nodes.first.props[:value] == 2 },
             :add, ->(n) { n.op == :send && n.props[:name] == :+ },
-            [:input, :value, :sub_one, :receiver],
+            [:connector, :value, :sub_one, :receiver],
             [:const_one, :value, :sub_one, arg0],
-            [:input, :value, :sub_two, :receiver],
+            [:connector, :value, :sub_two, :receiver],
             [:const_two, :value, :sub_two, arg0],
             [:sub_one, :value, :fib_one, arg0],
             [:sub_two, :value, :fib_two, arg0],
@@ -661,7 +661,7 @@ describe RubyJIT::IR::Builder do
 
       it 'requiring one value from the stack' do
         expect(@fragment.stack_in.size).to eql 1
-        expect(@fragment.stack_in.first.op).to eql :input
+        expect(@fragment.stack_in.first.op).to eql :connector
       end
 
       it 'with the merge, trace, and return nodes forming a control flow to the last_control' do
@@ -675,7 +675,7 @@ describe RubyJIT::IR::Builder do
       it 'with data flowing from the value on the stack to the finish' do
         RubyJIT::Fixtures::Builder.data_flows(
             self, @graph,
-            [:input, :value, :finish, :value]
+            [:connector, :value, :finish, :value]
         )
       end
 
@@ -693,7 +693,7 @@ describe RubyJIT::IR::Builder do
 
       it 'with the returned value on the stack' do
         expect(@fragment.stack_out.size).to eql 1
-        expect(@fragment.stack_out.first.op).to eql :input
+        expect(@fragment.stack_out.first.op).to eql :connector
       end
 
     end

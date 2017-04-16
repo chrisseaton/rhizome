@@ -328,7 +328,7 @@ module RubyJIT
 
         pop = proc {
           if stack.empty?
-            input = Node.new(:input)
+            input = Node.new(:connector)
             stack_in.unshift input
             input
           else
@@ -368,7 +368,7 @@ module RubyJIT
                 # in this basic block, we remember that we need it as an input
                 # and create an input node to represent its future value.
 
-                input = Node.new(:input)
+                input = Node.new(:connector)
                 names_in[name] = input
                 names[name] = input
                 value = input

@@ -35,12 +35,12 @@ module RubyJIT
         # Look at each node.
 
         graph.all_nodes.each do |n|
-          # Remove jump and input nodes, as after construction both of these
+          # Remove jump and connector nodes, as after construction both of these
           # are just going to sit on edges with one input and one output, and
           # we might as well directly connect the nodes that they are between.
           # Also remove merges that have only one control input.
 
-          if [:jump, :input].include?(n.op) || (n.op == :merge && n.outputs.size == 1)
+          if [:jump, :connector].include?(n.op) || (n.op == :merge && n.outputs.size == 1)
             # For each input edge...
 
             n.inputs.edges.each do |input|

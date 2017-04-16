@@ -68,10 +68,10 @@ module RubyJIT
               label: node_label(node)
           }
 
-          # We don't draw unresolved input nodes - the edges just go into
+          # We don't draw connector nodes with no input - the edges just go into
           # empty space.
 
-          if node.op == :input && !node.has_input?
+          if node.op == :connector && !node.has_input?
             attrs[:style] = 'invis'
           end
 
@@ -102,9 +102,9 @@ module RubyJIT
               attrs[:dir] = 'back'
             end
 
-            # We draw edges that go to graph fragment input as orange...
+            # We connector edges as orange.
 
-            if node.op == :input
+            if node.op == :connector
               attrs[:color] = 'orange'
 
               # ...and dash it if it has not been connected yet.

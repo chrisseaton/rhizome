@@ -187,8 +187,8 @@ of real values.
 
 As we only build one basic block at a time, the basic block may depend on values
 that we don't have, such as values on the stack or local variable names. In the
-graph builder, at this stage, we represent these as special `input` nodes and
-will connect them up later.
+graph builder, at this stage, we represent these as special `connector` nodes
+and will connect them up later.
 
 The graph fragments of our basic blocks look like this, with the dangling edges
 show in orange:
@@ -234,15 +234,15 @@ The connected graph fragments looks like this:
 
 After constructing the graph we are left with some scaffolding. We create phi
 nodes for all names, even if it turned out that they weren't used, and we have
-these input nodes that always have one edge coming in and one edge coming out so
-they aren't really useful for anything anymore.
+these connector nodes that always have one edge coming in and one edge coming
+out so they aren't really useful for anything anymore.
 
 After constructing the graph we run some optimisation passes to tidy the graph
 up. We'll describe optimisation passes in more depth later, but they are
 operations applied to the graph to improve it in some way. Our post-build
-optimisation passes include a pass to remove the useless input nodes, and jump
-nodes which also now have no purpose because they just one control flow edge to
-another.
+optimisation passes include a pass to remove the useless connector nodes, and
+jump nodes which also now have no purpose because they just one control flow
+edge to another.
 
 After that we run passes to remove dead code, to get rid of the phi nodes that
 nobody is using. And finally we run a pass to remove phi nodes that don't
@@ -266,7 +266,7 @@ basic blocks together.
 ### Potential projects
 
 * Adding useless nodes and then removing them is wasteful, so it is possible to
-  avoid creating the input and jump nodes which are remove straight after
+  avoid creating the connector and jump nodes which are remove straight after
   construction, and is it possible to not create phis which are immediately
   dead?
 * Discover the formal algorithms for graph construction and apply and write them

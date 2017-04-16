@@ -39,13 +39,13 @@ describe RubyJIT::Passes::PostBuild do
       expect(@graph.contains?(:jump)).to be_falsey
     end
 
-    it 'removes input nodes' do
-      input = RubyJIT::IR::Node.new(:input)
-      @graph.start.output_to :control, input
-      input.output_to :control, @graph.finish
-      expect(@graph.contains?(:input)).to be_truthy
+    it 'removes connector nodes' do
+      connector = RubyJIT::IR::Node.new(:connector)
+      @graph.start.output_to :control, connector
+      connector.output_to :control, @graph.finish
+      expect(@graph.contains?(:connector)).to be_truthy
       @pass.run @graph
-      expect(@graph.contains?(:input)).to be_falsey
+      expect(@graph.contains?(:connector)).to be_falsey
     end
 
     it 'removes merge nodes that do not merge' do
