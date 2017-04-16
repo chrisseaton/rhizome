@@ -36,14 +36,13 @@ module RubyJIT
         # already the monomorphic part of an inline cache).
 
         graph.all_nodes.each do |n|
-          if n.op == :send && n.props[:profile] && !n.props[:megamorphic] && n.props[:kind].nil?
+          if n.op == :send && n.props[:profile] && !n.props[:megamorphic] && !n.props[:kind]
 
             # The existing send node will become the megamorphic side
             # of the inline cache.
 
-            mega_send = n
-            profile = mega_send.props[:profile]
-            mega_send.props[:megamorphic] = true
+            original_send = n
+            profile = original_send.props[:profile]
 
             # We can only apply this optimisation if there was only one kind
             # of receiver, because we only create monomorphic inline caches
@@ -58,45 +57,46 @@ module RubyJIT
               # output on the send. I'm not sure how it would work
               # in other cases.
 
-              next if mega_send.inputs.with_input_name(:control).size != 1
-              next if mega_send.outputs.with_output_name(:control).size != 1
+              next if original_send.inputs.with_input_name(:control).size != 1
+              next if original_send.outputs.with_output_name(:control).size != 1
 
-              control_in = mega_send.inputs.with_input_name(:control).edges.first.from
-              control_out = mega_send.outputs.with_output_name(:control).edges.first.to
+              control_in = original_send.inputs.with_input_name(:control).edges.first.from
+              control_out = original_send.outputs.with_output_name(:control).edges.first.to
 
-              # Find the users of the node and their input names, and then
-              # disconnect them from the megamorphic send. We'll reconnect
-              # them to another node later.
+              # Find the users of the node and their input names. We'll
+              # reconnect them to another node later.
 
-              user_edges = mega_send.outputs.with_output_name(:value).edges
+              user_edges = original_send.outputs.with_output_name(:value).edges
               user_nodes = user_edges.map { |e| [e.to, e.input_name] }
-              user_edges.each &:remove
 
               # Disconnect control from the megamorphic send as well.
 
-              mega_send.inputs.with_input_name(:control).edges.first.remove
-              mega_send.outputs.with_output_name(:control).edges.first.remove
+              original_send.inputs.with_input_name(:control).edges.first.remove
+              original_send.outputs.with_output_name(:control).edges.first.remove
 
               # Create a new send that will our our monomorphic case. This
               # will call a specific method directly, not needing any method
               # lookup because we have already checked, or 'guarded' the
               # kind of the receiver.
 
-              mono_send = IR::Node.new(:send, name: mega_send.props[:name], kind: kind)
+              mega_send = IR::Node.new(:send, argc: original_send.props[:argc], name: original_send.props[:name], megamorphic: true, profile: profile)
+              mono_send = IR::Node.new(:send, argc: original_send.props[:argc], name: original_send.props[:name], kind: kind, profile: profile)
 
-              # Connect the same receiver and arguments to the monomorphic
-              # send as the megamorphic one has.
+              # Connect the same receiver and arguments to the new
+              # sends as the current one had.
 
-              mega_send.inputs.with_input_name(:receiver).edges.first.from.output_to :value, mono_send, :receiver
+              original_send.inputs.with_input_name(:receiver).edges.first.from.output_to :value, mono_send, :receiver
+              original_send.inputs.with_input_name(:receiver).edges.first.from.output_to :value, mega_send, :receiver
 
-              mega_send.props[:argc].times do |a|
-                mega_send.inputs.with_input_name(:"arg(#{a})").edges.first.from.output_to :value, mono_send, :"arg(#{a})"
+              original_send.props[:argc].times do |a|
+                original_send.inputs.with_input_name(:"arg(#{a})").edges.first.from.output_to :value, mono_send, :"arg(#{a})"
+                original_send.inputs.with_input_name(:"arg(#{a})").edges.first.from.output_to :value, mega_send, :"arg(#{a})"
               end
 
               # The guard node checks the kind of the receiver.
 
               guard = IR::Node.new(:kind_is?, kind: kind)
-              mega_send.inputs.with_input_name(:receiver).edges.first.from.output_to :value, guard
+              original_send.inputs.with_input_name(:receiver).edges.first.from.output_to :value, guard
 
               # We then branch based on the value of the guard.
 
@@ -125,6 +125,10 @@ module RubyJIT
               user_nodes.each do |user, name|
                 phi.output_to :value, user, name
               end
+
+              # Remove the original send
+
+              original_send.remove
 
               modified = true
             end

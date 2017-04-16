@@ -54,12 +54,12 @@ information gathered by the profiler and that have been called with only a
 single kind of receiver.
 
 It replaces them with two sends - the one specialised for the method call we are
-caching, which we call the *monomorphic* one, and the original send which can
-handle any receiver kinds, which we call the *megamorphic* one. A `is_kind?`
-node compares the kind of receiver against what we expect, and then a branch
-directs control flow to monomorphic send if the kind is expected, and if not to
-the megamophic send. A merge node and a phi merges the control flow and the
-return value from the two sends.
+caching, which we call the *monomorphic* one, and one like the original send
+which can handle any receiver kinds, which we call the *megamorphic* one. A
+`is_kind?` node compares the kind of receiver against what we expect, and then a
+branch directs control flow to monomorphic send if the kind is expected, and if
+not to the megamophic send. A merge node and a phi merges the control flow and
+the return value from the two sends.
 
 Consider a simple add function that contains a single send, in an `+` operator,
 and that has only been called with `Fixnum` values.

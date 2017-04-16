@@ -47,7 +47,7 @@ viz = RubyJIT::IR::Graphviz.new(graph)
 viz.visualise 'before.pdf'
 
 passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Passes::InlineCaching.new,
+    RubyJIT::Passes::InlineCaching.new
 )
 
 passes_runner.run graph
