@@ -53,45 +53,15 @@ module RubyJIT
             if profile.receiver_kinds.size == 1
               kind = profile.receiver_kinds.first
 
-              # We've only designed this to handle one control input and
-              # output on the send. I'm not sure how it would work
-              # in other cases.
-
-              next if original_send.inputs.with_input_name(:control).size != 1
-              next if original_send.outputs.with_output_name(:control).size != 1
-
-              control_in = original_send.inputs.with_input_name(:control).edges.first.from
-              control_out = original_send.outputs.with_output_name(:control).edges.first.to
-
-              # Find the users of the node and their input names. We'll
-              # reconnect them to another node later.
-
-              user_edges = original_send.outputs.with_output_name(:value).edges
-              user_nodes = user_edges.map { |e| [e.to, e.input_name] }
-
-              # Disconnect control from the megamorphic send as well.
-
-              original_send.inputs.with_input_name(:control).edges.first.remove
-              original_send.outputs.with_output_name(:control).edges.first.remove
-
               # Create a new send that will our our monomorphic case. This
               # will call a specific method directly, not needing any method
               # lookup because we have already checked, or 'guarded' the
               # kind of the receiver.
 
-              mega_send = IR::Node.new(:send, argc: original_send.props[:argc], name: original_send.props[:name], megamorphic: true, profile: profile)
-              mono_send = IR::Node.new(:send, argc: original_send.props[:argc], name: original_send.props[:name], kind: kind, profile: profile)
-
-              # Connect the same receiver and arguments to the new
-              # sends as the current one had.
-
-              original_send.inputs.with_input_name(:receiver).edges.first.from.output_to :value, mono_send, :receiver
-              original_send.inputs.with_input_name(:receiver).edges.first.from.output_to :value, mega_send, :receiver
-
-              original_send.props[:argc].times do |a|
-                original_send.inputs.with_input_name(:"arg(#{a})").edges.first.from.output_to :value, mono_send, :"arg(#{a})"
-                original_send.inputs.with_input_name(:"arg(#{a})").edges.first.from.output_to :value, mega_send, :"arg(#{a})"
-              end
+              argc = original_send.props[:argc]
+              name = original_send.props[:name]
+              mega_send = IR::Node.new(:send, argc: argc, name: name, profile: profile, megamorphic: true)
+              mono_send = IR::Node.new(:send, argc: argc, name: name, profile: profile, kind: kind)
 
               # The guard node checks the kind of the receiver.
 
@@ -101,7 +71,6 @@ module RubyJIT
               # We then branch based on the value of the guard.
 
               branch = IR::Node.new(:branch)
-              control_in.output_to :control, branch
               guard.output_to :value, branch, :condition
 
               # The branch goes to either the monomorphic case or the megamorphic case.
@@ -115,20 +84,15 @@ module RubyJIT
               merge = IR::Node.new(:merge)
               mono_send.output_to :control, merge, :'control(mono)'
               mega_send.output_to :control, merge, :'control(mega)'
-              merge.output_to :control, control_out
 
               phi = IR::Node.new(:phi)
               merge.output_to :switch, phi
               mono_send.output_to :value, phi, :'value(mono)'
               mega_send.output_to :value, phi, :'value(mega)'
 
-              user_nodes.each do |user, name|
-                phi.output_to :value, user, name
-              end
+              # Replace the original send
 
-              # Remove the original send
-
-              original_send.remove
+              original_send.replace branch, merge, [mono_send, mega_send], phi
 
               modified = true
             end

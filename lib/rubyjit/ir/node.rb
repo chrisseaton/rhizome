@@ -110,6 +110,34 @@ module RubyJIT
         outputs.edges.dup.each(&:remove)
       end
 
+      # Replace this node with a subgraph of new nodes. Allows the caller to
+      # specify the start and finish nodes for control, and then separately
+      # any number of nodes which should become users of the data inputs to
+      # the current node, and a node which now produces the value that was
+      # previously coming from this node.
+
+      def replace(start, finish, users, value)
+        inputs.edges.each do |edge|
+          if edge.control?
+            edge.from.output_to edge.output_name, start, edge.input_name
+          else
+            users.each do |user|
+              edge.from.output_to edge.output_name, user, edge.input_name
+            end
+          end
+        end
+
+        outputs.edges.each do |edge|
+          if edge.control?
+            finish.output_to edge.output_name, edge.to, edge.input_name
+          else
+            value.output_to edge.output_name, edge.to, edge.input_name
+          end
+        end
+
+        remove
+      end
+
     end
 
     # An edge is a connection from one node to another.
