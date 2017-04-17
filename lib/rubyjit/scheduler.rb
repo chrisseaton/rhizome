@@ -409,6 +409,9 @@ module RubyJIT
                     insn.push input.from.props[:register]
                   end
                 end
+                # Elide phi instructions if register allocation has run correctly and values are
+                # already in the correct registers.
+                insn = nil if insn.select.with_index{ |_,i| i.odd? }.uniq.size == 1
               end
 
               # Send instructions need the arguments.
@@ -422,7 +425,7 @@ module RubyJIT
               end
 
               # Add the instruction to the block.
-              block.push insn
+              block.push insn if insn
             end
 
             next_to_last_control = node if node.has_control_output?

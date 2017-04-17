@@ -143,6 +143,11 @@ describe RubyJIT::Scheduler do
       @builder.build RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT
       @postbuild = RubyJIT::Passes::PostBuild.new
       @postbuild.run @graph
+      @passes_runner = RubyJIT::Passes::Runner.new(
+          RubyJIT::Passes::DeadCode.new,
+          RubyJIT::Passes::NoChoicePhis.new
+      )
+      @passes_runner.run @graph
       @scheduler.schedule @graph
       @register_allocator = RubyJIT::RegisterAllocator.new
       @register_allocator.allocate_infinite @graph
@@ -163,6 +168,10 @@ describe RubyJIT::Scheduler do
 
     it 'renames finish to return' do
       expect(@blocks.last.last).to start_with(:return)
+    end
+
+    it 'elides phi nodes' do
+      expect(@blocks.flatten(1).map(&:first)).to_not include(:phi)
     end
 
     describe 'for a fib function' do
