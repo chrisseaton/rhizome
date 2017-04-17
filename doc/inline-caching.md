@@ -41,7 +41,7 @@ and call the right method.
 
 ```ruby
 if a.is_a?(fixnum)
-  fixnum_add(a, b)
+  fixnum#+(a, b)
 else
   lookup_method(a, :+).call(b)
 end
