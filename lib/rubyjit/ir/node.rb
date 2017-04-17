@@ -51,6 +51,8 @@ module RubyJIT
         
         raise if to == self
 
+        raise input_name.to_s if to.op == :phi && !input_name.to_s.start_with?('value(') && ![:switch, :local_schedule, :global_schedule].include?(input_name)
+
         edge = Edge.new(self, output_name, to, input_name)
 
         # The operation is symmetrical - both nodes get the edge added.
@@ -68,19 +70,19 @@ module RubyJIT
       # Does this node produce a value?
 
       def produces_value?
-        outputs.edges.any? { |e| e.names.include?(:value) }
+        outputs.edges.any?(&:value?)
       end
 
       # Does this node have any control input?
 
       def has_control_input?
-        inputs.input_names.any? { |n| n.to_s.start_with?('control') }
+        inputs.edges.any?(&:control?)
       end
 
       # Does this node have any control output?
 
       def has_control_output?
-        outputs.output_names.any? { |n| n.to_s.start_with?('control') }
+        outputs.edges.any?(&:control?)
       end
 
       # Is this node floating? As in, not fixed in an order except by data dependencies.
@@ -180,6 +182,12 @@ module RubyJIT
 
       def schedule?
         names.any? { |n| n.to_s.end_with?('schedule') }
+      end
+
+      # Is this a value edge?
+
+      def value?
+        names.any? { |n| n.to_s.end_with?('value') }
       end
 
       # Remove an edge by removing the references from the nodes to it.

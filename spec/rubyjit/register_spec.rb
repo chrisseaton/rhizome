@@ -31,6 +31,13 @@ describe RubyJIT::RegisterAllocator do
     @builder = RubyJIT::IR::Builder.new
     @builder.build RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT
     @graph = @builder.graph
+    @postbuild = RubyJIT::Passes::PostBuild.new
+    @postbuild.run @graph
+    @passes_runner = RubyJIT::Passes::Runner.new(
+        RubyJIT::Passes::DeadCode.new,
+        RubyJIT::Passes::NoChoicePhis.new
+    )
+    @passes_runner.run @graph
     @scheduler = RubyJIT::Scheduler.new
     @scheduler.schedule @graph
     @registers = RubyJIT::RegisterAllocator.new
@@ -58,10 +65,22 @@ describe RubyJIT::RegisterAllocator do
     it 'only uses each register once' do
       registers = Set.new
       @graph.all_nodes.each do |node|
-        if node.produces_value?
+        if node.produces_value? && node.op != :move
           r = node.props[:register]
           expect(registers.include?(r)).to be_falsey
           registers.add r
+        end
+      end
+    end
+
+    it 'has all inputs to a phi node already having the same register' do
+      @graph.all_nodes.each do |node|
+        if node.op == :phi
+          inputs = node.inputs.edges.select { |e| e.value? }.map { |e| e.from }
+          registers = inputs.map { |i| i.props[:register] }
+          registers.each do |r|
+            expect(r).to eql registers.first
+          end
         end
       end
     end

@@ -44,3 +44,18 @@ we had an infinite number of registers that we can use. It is useful where a
 graph needs to be register allocated in order to test or demonstrate some later
 phase of the compiler, but you aren't actually going to generate machine code so
 you don't care about how many registers a real processor has.
+
+#### Phi nodes
+
+The phi nodes that we created when building the graph to say that a value was
+taken from two possible values based on what branch of the program was taken are
+used as information to guide the register allocator. After register allocation,
+all inputs to a phi node should have be in the same register, and then the phi
+node itself does nothing in the compiled code.
+
+Register allocation algorithms may not be able to satisfy this requirement (for
+example if one value goes to two phi nodes and they want the value in different
+registers), so register allocation may also insert `move` nodes above phi nodes
+to copy a value from one register into another. For the infinite allocator,
+these are always needed as every nodes has its own register and values are never
+in the registers that phi nodes want.

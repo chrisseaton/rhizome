@@ -360,7 +360,7 @@ module RubyJIT
           # block.
 
           block = []
-          next_to_last = nil
+          next_to_last_control = nil
 
           # Follow the local sequence.
           
@@ -403,7 +403,7 @@ module RubyJIT
               # Phi instructions need pairs of source registers with the blocks they came from.
               if node.op == :phi
                 node.inputs.edges.each do |input|
-                  if input.input_name =~ /^value\((\d+)\)$/
+                  if input.input_name =~ /^value\((.+)\)$/
                     n = $1.to_i
                     insn.push n
                     insn.push input.from.props[:register]
@@ -424,8 +424,8 @@ module RubyJIT
               # Add the instruction to the block.
               block.push insn
             end
-            
-            next_to_last = node
+
+            next_to_last_control = node if node.has_control_output?
 
             # Follow the local schedule edge to the next node.
             node = node.outputs.with_output_name(:local_schedule).to_nodes.first
@@ -434,7 +434,7 @@ module RubyJIT
           # If the last node is a merge, we need to remember which merge index this is.
 
           if node && node.op == :merge
-            next_to_last.outputs.with_output_name(:control).edges.first.input_name =~ /^control\((\d+)\)$/
+            next_to_last_control.outputs.with_output_name(:control).edges.first.input_name =~ /^control\((.+)\)$/
             n = $1.to_i
             merge_index_to_first_node[n] = first_node
           end
@@ -444,7 +444,6 @@ module RubyJIT
           # fallthrough.
 
           unless [:return, :branch].include?(block.last.first)
-            raise unless node.op == :merge
             block.push [:jump, node]
           end
 

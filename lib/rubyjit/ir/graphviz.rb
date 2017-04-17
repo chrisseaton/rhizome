@@ -192,6 +192,8 @@ module RubyJIT
             label = "trace(#{node.props[:line]})"
           when :constant
             label = "const(#{node.props[:value]})"
+          when :move
+            label = "move #{node.props[:from]}"
           else
             label = node.op.to_s
         end

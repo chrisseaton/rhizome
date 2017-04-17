@@ -33,12 +33,70 @@ module RubyJIT
     # used for a value that is no longer needed.
 
     def allocate_infinite(graph)
+      # Assign each node a unique register
+
       n = 0
       graph.all_nodes.each do |node|
         if node.produces_value?
           node.props[:register] = :"r#{n}"
           n += 1
         end
+      end
+
+      # We're going to need to move all inputs to a phi into the phi node's
+      # register
+
+      add_phi_moves graph
+    end
+
+    # After we've allocated registers, however we've done it, we may not have
+    # been able to get all inputs to a phi node to use the same register as
+    # the phi node itself has (remembering that the input to a phi might be a
+    # value that has other users, including other phis, so we can't just change
+    # which register the input uses). In those cases, we may need to add moves
+    # before the phi node to put them into the right place.
+
+    def add_phi_moves(graph)
+      to_remove = []
+
+      phis = graph.find_nodes(:phi)
+
+      phis.each do |phi|
+        phi_register = phi.props[:register]
+        merge = phi.inputs.with_input_name(:switch).nodes.first
+
+        phi.inputs.edges.each do |input|
+          if input.value?
+            input_register = input.from.props[:register]
+            if input_register != phi_register
+              # We want to add a move node, but by the time the register
+              # allocator is run the graph is very complicated, with
+              # data flow, control flow, and a local schedule. We'll ignore
+              # most of that and just insert this move into the local
+              # schedule.
+
+              input.input_name =~ /value\((.*)\)/
+              name = $1
+
+              last_control = merge.inputs.with_input_name(:"control(#{name})").nodes.first
+              schedule_edge = merge.inputs.edges.find { |e| e.input_name == :local_schedule }
+              next_in_schedule = schedule_edge.to
+
+              schedule_edge.remove
+
+              move = IR::Node.new(:move, from: input_register, register: phi_register)
+              last_control.output_to :local_schedule, move
+              move.output_to :local_schedule, next_in_schedule
+
+              input.from.output_to :value, move
+
+              to_remove.push input
+              move.output_to input.output_name, phi, input.input_name
+            end
+          end
+        end
+
+        to_remove.each(&:remove)
       end
     end
 
