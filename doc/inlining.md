@@ -150,6 +150,9 @@ As with the inline caching pass, we are going to go back and remove this
 complexity when we apply further optimisation passes such as deoptimisation,
 later on.
 
+We haven't talked here about what happens if the `fixnum_add` operation
+overflows here. We'll solve that in a later document.
+
 ### More technical details
 
 I don't know anything about the history of function inlining, but the phrase

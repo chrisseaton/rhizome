@@ -108,6 +108,10 @@ change the program instead of just using the slower send.
 When we talk about deoptimisation later we'll discuss what else could go on the
 cache miss side of the branch.
 
+We haven't talked here about what happens if classes are monkey patched, so that
+the cache is still correct, it just now points at the wrong method. We'll solve
+that in a later document.
+
 #### Expanding to polymorphic caches
 
 Our inline cache handles just a single kind of receiver and only have a slow and
