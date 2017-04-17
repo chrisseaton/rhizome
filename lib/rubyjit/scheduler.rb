@@ -251,6 +251,12 @@ module RubyJIT
 
       in_block = Set.new(nodes_in_block(first_node))
 
+      # Back up a second... our first node could be a fixed node, which
+      # actually has input values. Such as a branch with a condition.
+      # The nodes involved in that condition actually need to come first.
+
+      first_node = first_in_block(first_node, in_block)
+
       # Create a work list of nodes to schedule and a set of nodes
       # already scheduled.
 
@@ -275,7 +281,7 @@ module RubyJIT
         if node.inputs.from_nodes.all? { |i| !in_block.include?(i) || scheduled.include?(i) }
           # Add a local schedule edge from the previous last node to this one,
           # which then becomes the last node.
-
+          raise if tail.inputs.from_nodes.include? node
           tail.output_to :local_schedule, node
           tail = node
           scheduled.add node
@@ -283,6 +289,23 @@ module RubyJIT
           to_schedule.push node
         end
       end
+    end
+
+    # We've got a problem with our IR design here. We expect some fixed
+    # control flow node to be the start of the basic block. In the case
+    # of at least some branches, they can have input that needs to run
+    # first, but our system just isn't designed for anything except a
+    # control flow node to need to run first. This fix-up method walks
+    # back from the fixed node to see if actually there is an input that
+    # needs to run first. Not a great solution.
+
+    def first_in_block(first, nodes)
+      first.inputs.from_nodes.each do |n|
+        if nodes.include?(n)
+          return n
+        end
+      end
+      first
     end
 
     # Find all the nodes in a basic block, given the first node.
@@ -354,6 +377,8 @@ module RubyJIT
 
       graph.all_nodes.each do |node|
         if node.begins_block?
+          original_first_node = node
+          node = first_in_block(original_first_node, nodes_in_block(original_first_node))
           first_node = node
 
           # We're going to create an array of operations for this basic
@@ -392,11 +417,11 @@ module RubyJIT
                 insn.push input_values.props[:register]
               end
 
-              # If it's a branch the target basic blocks.
+              # If it's a branch then the target basic blocks.
               if node.op == :branch
                 insn.push node.inputs.with_input_name(:condition).from_nodes.first.props[:register]
                 [:true, :false].each do |branch|
-                  insn.push node.outputs.with_output_name(branch).to_nodes.first
+                  insn.push node.outputs.with_input_name(branch).to_nodes.first
                 end
               end
 
@@ -422,6 +447,11 @@ module RubyJIT
                 node.props[:argc].times do |n|
                   insn.push node.inputs.with_input_name(:"arg(#{n})").from_nodes.first.props[:register]
                 end
+              end
+
+              # Kind instructions need the kind.
+              if node.op == :kind_is?
+                insn.push node.props[:kind]
               end
 
               # Add the instruction to the block.
@@ -457,6 +487,7 @@ module RubyJIT
             first_node_last_block = first_node
             last_block = block
           else
+            first_node_to_block_index[original_first_node] = blocks.size
             first_node_to_block_index[first_node] = blocks.size
             blocks.push block
           end
@@ -478,17 +509,9 @@ module RubyJIT
             # the basic block instead.
 
             if e.is_a?(IR::Node)
-              first_node_to_block_index[e]
+              :"block#{first_node_to_block_index[e]}"
             else
               e
-            end
-          end
-
-          if insn.first == :phi
-            n = 2
-            while n < insn.size
-              insn[n] = :"block#{first_node_to_block_index[merge_index_to_first_node[insn[n]]]}"
-              n += 2
             end
           end
         end
