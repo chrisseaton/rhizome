@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,24 +19,40 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/profile'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/graphviz'
-require 'rubyjit/ir/builder'
-require 'rubyjit/ir/core'
-require 'rubyjit/passes/post_build'
-require 'rubyjit/passes/dead_code'
-require 'rubyjit/passes/no_choice_phis'
-require 'rubyjit/passes/inline_caching'
-require 'rubyjit/passes/inlining'
-require 'rubyjit/passes/deoptimise'
-require 'rubyjit/passes/runner'
-require 'rubyjit/scheduler'
-require 'rubyjit/registers'
+module RubyJIT
+  module Passes
+
+    # An optimisation pass to replace nodes with deoptimisation.
+
+    class Deoptimise
+
+      def initialize(remove_trace: true)
+        @remove_trace = remove_trace
+      end
+
+      def run(graph)
+        modified = false
+
+        # Remove trace nodes entirely - no deoptimisation nodes are needed
+        # because we can stop the compiled code at any point and run in the
+        # interpreter - we don't need to be at a certain point in the program
+        # to do that.
+
+        if @remove_trace
+          graph.find_nodes(:trace).each do |trace|
+            # A trace node should just have a single control in and out
+            control_from = trace.inputs.with_input_name(:control).from_node
+            control_to = trace.outputs.with_output_name(:control).to_node
+            control_from.output_to :control, control_to
+            trace.remove
+            modified |= true
+          end
+        end
+
+        modified
+      end
+
+    end
+
+  end
+end

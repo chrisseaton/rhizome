@@ -61,6 +61,14 @@ module RubyJIT
         to.inputs.edges.push edge
       end
 
+      # Does this node output to another node?
+
+      def outputs_to?(output_name, to, input_name=output_name)
+        outputs.with_output_name(output_name).edges.any? do |edge|
+          edge.to == to && input_name == input_name
+        end
+      end
+
       # Does this node have any inputs?
 
       def has_input?
@@ -252,10 +260,26 @@ module RubyJIT
         edges.map(&:from).uniq
       end
 
+      # Check that there is a single from node and get it.
+
+      def from_node
+        nodes = from_nodes
+        raise unless nodes.size == 1
+        nodes.first
+      end
+
       # Get all the nodes inputing values.
 
       def to_nodes
         edges.map(&:to).uniq
+      end
+
+      # Check that there is a single to node and get it.
+
+      def to_node
+        nodes = to_nodes
+        raise unless nodes.size == 1
+        nodes.first
       end
 
       # Is this set empty?
