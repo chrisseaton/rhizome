@@ -165,13 +165,13 @@ describe RubyJIT::Memory do
       memory.free
     end
       
-      it 'raises a ArgumentError if the number of arguments does not match the number of types' do
-        memory = RubyJIT::Memory.new(1024)
-        memory.executable = true
-        expect { memory.to_proc([:long, :long], :long).call(1, 2, 3) }.to raise_error(ArgumentError)
-        memory.free
-      end
-    
+    it 'raises a ArgumentError if the number of arguments does not match the number of types' do
+      memory = RubyJIT::Memory.new(1024)
+      memory.executable = true
+      expect { memory.to_proc([:long, :long], :long).call(1, 2, 3) }.to raise_error(ArgumentError)
+      memory.free
+    end
+  
     it 'returns a Proc' do
       memory = RubyJIT::Memory.new(1024)
       memory.executable = true
