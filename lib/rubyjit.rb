@@ -22,6 +22,7 @@
 require 'rubyjit/config'
 require 'rubyjit/memory'
 require 'rubyjit/handles'
+require 'rubyjit/interface'
 require 'rubyjit/frontend/mri_parser'
 require 'rubyjit/frontend/rbx_parser'
 require 'rubyjit/frontend/jruby_parser'

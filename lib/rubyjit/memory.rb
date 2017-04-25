@@ -82,48 +82,61 @@ module RubyJIT
       
     end
     
-    def initialize(size)
+    def initialize(size, address=nil)
       raise RangeError if size < 0
       
       @size = size
+      @mapped = true
       @readable = true
       @writable = true
       @executable = false
       
-      if Config::RBX || Config::JRUBY
-        null = FFI::Pointer.new(0)
+      if address
+        if Config::RBX || Config::JRUBY
+          @address = FFI::Pointer.new(address)
+        else
+          @address = Fiddle::Pointer.new(address)
+        end
+        
+        @mapped = false
       else
-        null = 0
+        if Config::RBX || Config::JRUBY
+          null = FFI::Pointer.new(0)
+        else
+          null = 0
+        end
+        
+        # Here is the key call to mmap. The first parameter is the null pointer
+        # and means that we don't care where this memory is located within the
+        # address space. Then we pass the size - how many bytes we need. We then
+        # say that the memory should be initially read/write, then say that it's
+        # 'anonymous' which means not backed by any actual file on disk, and then
+        # we say that it should be private to just this process.
+        
+        @address = POSIX::mmap(null, size, POSIX::PROT_READ | POSIX::PROT_WRITE, POSIX::MAP_ANON | POSIX::MAP_PRIVATE, 0, 0)
+        
+        # Check for error information in the return value.
+        
+        if Config::RBX || Config::JRUBY
+          code = @address.address
+        else
+          code = @address.to_i
+        end
+        
+        raise StadardError if code == POSIX::MAP_FAILED
+        
+        # We will normally free the memory manually, as we want it to happen as
+        # soon as possible and not wait for the GC to free this object, and then
+        # free the native memory only when that has happened. However if things
+        # go wrong we do ask the finalizer to free the native memory as a last
+        # resort if it hasn't been done properly already.
+        
+        @mapped = true
+        
+        ObjectSpace.define_finalizer self, proc {
+          free if @address
+        }
       end
-      
-      # Here is the key call to mmap. The first parameter is the null pointer
-      # and means that we don't care where this memory is located within the
-      # address space. Then we pass the size - how many bytes we need. We then
-      # say that the memory should be initially read/write, then say that it's
-      # 'anonymous' which means not backed by any actual file on disk, and then
-      # we say that it should be private to just this process.
-      
-      @address = POSIX::mmap(null, size, POSIX::PROT_READ | POSIX::PROT_WRITE, POSIX::MAP_ANON | POSIX::MAP_PRIVATE, 0, 0)
-      
-      # Check for error information in the return value.
-      
-      if Config::RBX || Config::JRUBY
-        code = @address.address
-      else
-        code = @address.to_i
-      end
-      
-      raise StadardError if code == POSIX::MAP_FAILED
-      
-      # We will normally free the memory manually, as we want it to happen as
-      # soon as possible and not wait for the GC to free this object, and then
-      # free the native memory only when that has happened. However if things
-      # go wrong we do ask the finalizer to free the native memory as a last
-      # resort if it hasn't been done properly already.
-      
-      ObjectSpace.define_finalizer self, proc {
-        free if @address
-      }
     end
     
     attr_reader :size
@@ -155,6 +168,8 @@ module RubyJIT
       protect
     end
     
+    # Write bytes to memory.
+    
     def write(offset, bytes)
       raise 'memory not writable' unless writable?
       raise RangeError if offset < 0 || offset + bytes.size > size
@@ -173,6 +188,8 @@ module RubyJIT
       end
     end
     
+    # Read bytes from memory.
+    
     def read(offset, length)
       raise 'memory not readable' unless readable?
       raise RangeError if offset < 0 || offset + length > size
@@ -184,6 +201,23 @@ module RubyJIT
       end
       
       string.bytes
+    end
+    
+    # Read words from memory.
+    
+    def read_words(offset, count)
+      bytes = read(offset, count * Config::WORD_BYTES)
+      bytes.each_slice(Config::WORD_BYTES).map do |b|
+        word = 0
+        if Config::ENDIANESS == :little
+          Config::WORD_BYTES.times do |n|
+            word |= b[n] << Config::BYTE_BITS * n
+          end
+        else
+          raise
+        end
+        word
+      end
     end
     
     # The to_proc method makes the machine code instructions contained in this
@@ -219,7 +253,30 @@ module RubyJIT
       }
     end
     
+    # ...
+    
+    def self.from_proc(ret_type, arg_types, &block)
+      if Config::RBX || Config::JRUBY
+        FFI::Function.new(ret_type, arg_types, &block).address
+      else
+        types_map = {
+          long: Fiddle::TYPE_LONG
+        }
+        
+        $block = block
+        
+        Class.new(Fiddle::Closure) {
+          def call(*args)
+            $block.call(*args)
+          end
+        }.new(types_map[ret_type], arg_types.map(&types_map)).to_i
+      end
+    end
+    
+    # Free the memory.
+    
     def free
+      raise unless @mapped
       raise 'already freed' unless @address
       POSIX::munmap(@address, @size)
       @address = nil

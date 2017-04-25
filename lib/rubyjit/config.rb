@@ -30,7 +30,10 @@ module RubyJIT
     # as x86_64. We work out your processor architecture by looking at RbConfig.
     
     AMD64 = RbConfig::CONFIG['host_cpu'] == 'x86_64'
-    WORD_BITS = 64
+    BYTE_BITS = 8
+    WORD_BYTES = 8
+    WORD_BITS = WORD_BYTES * BYTE_BITS
+    ENDIANESS = :little
     
     # In some cases macOS does things differently to Linux. Again, use RbConfig
     # to work out what operating system we are running on.
