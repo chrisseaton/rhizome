@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,25 +19,22 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/handles'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/profile'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/graphviz'
-require 'rubyjit/ir/builder'
-require 'rubyjit/ir/core'
-require 'rubyjit/passes/post_build'
-require 'rubyjit/passes/dead_code'
-require 'rubyjit/passes/no_choice_phis'
-require 'rubyjit/passes/inline_caching'
-require 'rubyjit/passes/inlining'
-require 'rubyjit/passes/deoptimise'
-require 'rubyjit/passes/runner'
-require 'rubyjit/scheduler'
-require 'rubyjit/registers'
+# Illustrates native handles and tagging.
+
+require_relative '../lib/rubyjit'
+
+handles = RubyJIT::Handles.new(64)
+
+puts 'fixnums always have the lowest bit set'
+
+10.times do |n|
+  puts handles.to_native(n).to_s(2)
+end
+
+puts
+
+puts 'objects never have the lowest bit set'
+
+10.times do |n|
+  puts handles.to_native(n.to_s).to_s(2)
+end
