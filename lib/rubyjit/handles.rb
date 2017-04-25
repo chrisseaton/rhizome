@@ -28,29 +28,21 @@ module RubyJIT
     def initialize(word_bits)
       @min = -2**word_bits
       @max = 2**word_bits - 1
-      @from_native = {}
+      @from_native = {} unless Config::MRI
     end
     
     # Get a native handle for an object.
     
     def to_native(object)
-      handle = object.object_id
-      raise if handle < @min || handle > @max
-      unless object.is_a?(Integer) || @from_native.has_key?(handle)
-        ObjectSpace.define_finalizer object, finalizer_proc(handle)
-        @from_native[handle] = object
+      if object.is_a?(Integer)
+        handle = (object << 1) + 1
+      else
+        handle = object.object_id
+        raise if handle & 1 == 1
+        @from_native[handle] = object unless Config::MRI
       end
+      raise if handle < @min || handle > @max
       handle
-    end
-    
-    def finalizer_proc(handle)
-      # We need to create this proc in a proper, top-level method because
-      # otherwise we could capture the object in the scope of the finalizer
-      # and so the object would never be collected.
-      
-      Proc.new {
-        @from_native.delete handle
-      }
     end
     
     # Get an object from a native handle.
@@ -58,6 +50,8 @@ module RubyJIT
     def from_native(handle)
       if handle & 1 == 1
         handle >> 1
+      elsif Config::MRI
+        ObjectSpace._id2ref(handle)
       else
         @from_native[handle]
       end

@@ -26,7 +26,7 @@ require_relative 'fixtures'
 describe RubyJIT::Handles do
 
   before :each do
-    @handles = RubyJIT::Handles.new(64)
+    @handles = RubyJIT::Handles.new(RubyJIT::Config::WORD_BITS)
   end
 
   describe '#to_native' do

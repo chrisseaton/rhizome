@@ -18,10 +18,8 @@ When we call a native function that RubyJIT has compiled and pass it a Ruby
 object as an argument, what do we actually pass into the native code?
 
 We can't pass a pointer to the host virtual machine's representation of the Ruby
-object, because this is not easily accessible using the Fiddle and FFI
-interfaces that we use for calling native code, and in some implementations with
-copying garbage collectors, there may not be a single stable pointer to the
-object in the first place.
+object because in some implementations with copying garbage collectors there may
+not be a single stable pointer to the object in the first place.
 
 We need something that native code can work with, so ultimately an integer,
 probably the same size as a pointer so that we can store it like a pointer. We
@@ -37,16 +35,24 @@ some corner cases for small integer objects for performance.
 #### Handles
 
 We need a unique integer to represent each object. Ruby already provides this in
-the `object_id` method on all objects. Ruby also provides a way to reverse this
-to get the object from its ID, in the `ObjectSpace._id2ref` method. What's more,
-on some implementations this is even actually the real pointer to the object
-that we said we couldn't get hold of! But this property, and the method
-`_id2ref` is not available in the default configuration of JRuby, so we won't
-use it.
+the `object_id` method on all objects. To reverse this integer and get the object back you can use the `ObjectSpace._id2ref` method.
 
-Instead we will use `object_id` to get natives handles for objects, but maintain
-our own map of handles back to objects, which is more portable. This map is
-maintained in the `Handles` class. Entries in the map are removed using finalisers which are run when the garbage collector deletes the object.
+However, `_id2ref` method does not work at all in JRuby in the default
+configuration, and is very slow in Rubinius. In both implementations, object can
+be moved by the garbage collector, so there isn't a constant address for
+objects, and the address can't be used to quickly generated an `object_id`, and
+to quickly reverse it by turning the number back into an object by using it as a
+pointer. Rubinius supports `_id2ref` by walking the entire heap until the right
+object is found. JRuby only supports it if you turn on an option to maintain a
+map of `object_id` values to their objects, which defeats other optimisations.
+
+Therefore on Rubinius and JRuby we maintain our own map of `object_id` values to
+the objects. This map must not keep the objects alive artificially - otherwise
+any object that ever had a handle would live forever and we would use an
+increasing amount of memory over time. We need a map that is weak in the value,
+and that reclaims map entries for collected references over time. Unfortunately
+this a little complicated, so we haven't implemented it and we just leak handles
+on Rubinius and JRuby.
 
 #### Tagged fixnums
 
@@ -75,12 +81,33 @@ You can take the `object_id` for a `fixnum` and get the value back by shifting
 right by one. You don't need to subtract the one, as the one is shifted off the
 right-hand side of the value.
 
+We implement the same scheme as this in RubyJIT.
+
 This is really important to use because RubyJIT can emit machine code to do
 these operations directly, without having to talk to the host virtual machine.
 We can detect if a handle is a `fixnum` by looking at the bottom bit, and we can
 convert a handle to an integer value if it is a `fixnum` by shifting right by
 one. Both those operations are just one machine instruction on most
 architectures.
+
+#### The native call interface
+
+The `Interface` class handles calls between native code and Ruby. It turns
+objects into handles, and handles into objects as required.
+
+Calls from Ruby to native are relatively simple - you just pass the function and
+the arguments in and it does the call and returns the return value. The native
+code accepts arguments using the system's calling convention - the rules which
+say where the arguments go in memory or registers.
+
+For calls from native to Ruby, the `Interface` object gives us a pointer, which
+we then call using a machine code instruction. To make it easier to read the
+arguments when we get back into Ruby, where we can't easily access registers, we
+have devised a new calling convention. The receiver, the method name, and then
+the arguments are pushed onto the stack. The native call back into Ruby which
+`Interface` provides is then called passing the address of the stack, and the
+number of arguments on it. From Ruby, using our memory system, we can read the
+memory off the stack using the address we were given.
 
 #### Interaction with optimisations and deoptimisation
 
@@ -147,3 +174,4 @@ We've been talking a special case for integers here, but the same technique can 
 
 * Implemented compressed ordinary object pointers.
 * Implement tagged pointers for floating-point values.
+* Fix leaking handles in Rubinius and JRuby.
