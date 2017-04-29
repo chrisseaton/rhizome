@@ -414,22 +414,6 @@ module RubyJIT
                 insn.push input_values.props[:register]
               end
 
-              # Then the target register if the instruction has one.
-              insn.push node.props[:register] if node.produces_value?
-
-              # If it's a branch then the target basic blocks and the test.
-              if node.op == :branch
-                insn.push node.inputs.with_input_name(:condition).from_nodes.first.props[:register]
-                
-                [:true, :false].each do |branch|
-                  insn.push node.outputs.with_input_name(branch).to_nodes.first
-                end
-                
-                if node.props[:test]
-                  insn.push node.props[:test]
-                end
-              end
-
               # Phi instructions need pairs of source registers with the blocks they came from.
               if node.op == :phi
                 node.inputs.edges.each do |input|
@@ -441,16 +425,37 @@ module RubyJIT
                 end
                 # Elide phi instructions if register allocation has run correctly and values are
                 # already in the correct registers.
-                insn = nil if insn.select.with_index{ |_,i| i.odd? }.uniq.size == 1
+                insn = nil if insn.drop(2).select.with_index{ |_,i| i.even? }.uniq.size == 1
               end
 
-              # Send instructions need the arguments.
-              if node.op == :send
+              # Send instructions and lowered equivalents need the arguments.
+              if [:send, :call_managed].include?(node.op)
                 insn.push node.inputs.with_input_name(:receiver).from_nodes.first.props[:register]
-                insn.push node.props[:name]
+
+                if node.op == :send
+                  insn.push node.props[:name]
+                else
+                  insn.push node.inputs.with_input_name(:name).from_nodes.first.props[:register]
+                end
 
                 node.props[:argc].times do |n|
                   insn.push node.inputs.with_input_name(:"arg(#{n})").from_nodes.first.props[:register]
+                end
+              end
+
+              # Then the target register if the instruction has one.
+              insn.push node.props[:register] if insn && node.produces_value?
+
+              # If it's a branch then the target basic blocks and the test.
+              if node.op == :branch
+                insn.push node.inputs.with_input_name(:condition).from_nodes.first.props[:register]
+                
+                [:true, :false].each do |branch|
+                  insn.push node.outputs.with_input_name(branch).to_nodes.first
+                end
+                
+                if node.props[:test]
+                  insn.push node.props[:test]
                 end
               end
 
