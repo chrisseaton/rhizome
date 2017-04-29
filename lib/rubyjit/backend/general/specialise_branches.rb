@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,30 +19,36 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/handles'
-require 'rubyjit/interface'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/profile'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/graphviz'
-require 'rubyjit/ir/builder'
-require 'rubyjit/ir/core'
-require 'rubyjit/passes/post_build'
-require 'rubyjit/passes/dead_code'
-require 'rubyjit/passes/no_choice_phis'
-require 'rubyjit/passes/inline_caching'
-require 'rubyjit/passes/inlining'
-require 'rubyjit/passes/deoptimise'
-require 'rubyjit/passes/runner'
-require 'rubyjit/backend/general/add_tagging'
-require 'rubyjit/backend/general/expand_tagging'
-require 'rubyjit/backend/general/specialise_branches'
-require 'rubyjit/backend/general/expand_calls'
-require 'rubyjit/scheduler'
-require 'rubyjit/registers'
+module RubyJIT
+  module Backend
+    module General
+
+      # Specialise branches for a particular test by taking the test off
+      # the condition edge and putting it into the branch as a property.
+
+      class SpecialiseBranches
+
+        def run(graph)
+          modified = false
+
+          graph.find_nodes(:branch).each do |branch|
+            condition = branch.inputs.with_input_name(:condition).from_node
+            
+            if condition.op == :int64_not_zero?
+              condition.inputs.from_node.output_to :value, branch, :condition
+              condition.remove
+              
+              branch.props[:test] = condition.op
+              
+              modified |= true
+            end
+          end
+
+          modified
+        end
+        
+      end
+
+    end
+  end
+end

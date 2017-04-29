@@ -197,6 +197,14 @@ module RubyJIT
       def value?
         names.any? { |n| n.to_s.end_with?('value') }
       end
+      
+      # ....
+      
+      def interdict(node)
+        from.output_to output_name, node, :value
+        node.output_to :value, to, input_name
+        remove
+      end
 
       # Remove an edge by removing the references from the nodes to it.
 

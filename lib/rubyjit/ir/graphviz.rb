@@ -194,6 +194,12 @@ module RubyJIT
             label = "const(#{node.props[:value]})"
           when :move
             label = "move #{node.props[:from]}"
+          when :branch
+            if node.props[:test]
+              label = "branch #{node.props[:test]}"
+            else
+              label = 'branch'
+            end
           else
             label = node.op.to_s
         end

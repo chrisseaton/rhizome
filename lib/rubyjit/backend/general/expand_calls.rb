@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,30 +19,30 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/handles'
-require 'rubyjit/interface'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/profile'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/graphviz'
-require 'rubyjit/ir/builder'
-require 'rubyjit/ir/core'
-require 'rubyjit/passes/post_build'
-require 'rubyjit/passes/dead_code'
-require 'rubyjit/passes/no_choice_phis'
-require 'rubyjit/passes/inline_caching'
-require 'rubyjit/passes/inlining'
-require 'rubyjit/passes/deoptimise'
-require 'rubyjit/passes/runner'
-require 'rubyjit/backend/general/add_tagging'
-require 'rubyjit/backend/general/expand_tagging'
-require 'rubyjit/backend/general/specialise_branches'
-require 'rubyjit/backend/general/expand_calls'
-require 'rubyjit/scheduler'
-require 'rubyjit/registers'
+module RubyJIT
+  module Backend
+    module General
+
+      # Expand send operations into a managed call, with the method name
+      # exposed as a runtime value.
+
+      class ExpandCalls
+
+        def run(graph)
+          modified = false
+
+          graph.find_nodes(:send).each do |send|
+            name = IR::Node.new(:constant, value: send.props[:name])
+            name.output_to :value, send, :name
+            send.replace IR::Node.new(:call_managed, argc: send.props[:argc])
+            modified |= true
+          end
+
+          modified
+        end
+        
+      end
+
+    end
+  end
+end

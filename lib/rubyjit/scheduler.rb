@@ -417,11 +417,16 @@ module RubyJIT
                 insn.push input_values.props[:register]
               end
 
-              # If it's a branch then the target basic blocks.
+              # If it's a branch then the target basic blocks and the test.
               if node.op == :branch
                 insn.push node.inputs.with_input_name(:condition).from_nodes.first.props[:register]
+                
                 [:true, :false].each do |branch|
                   insn.push node.outputs.with_input_name(branch).to_nodes.first
+                end
+                
+                if node.props[:test]
+                  insn.push node.props[:test]
                 end
               end
 
@@ -527,20 +532,20 @@ module RubyJIT
         if last.first == :jump && last.last == next_block
           # A jump that just goes to the next block can be removed and left to fall through.
           block.pop
-        elsif last.first == :branch && last[-1] == next_block
+        elsif last.first == :branch && last[3] == next_block
           # A branch where the else goes to the next block can branch only when true.
           block.pop
-          block.push [:branch_if, last[1], last[-2]]
-        elsif last.first == :branch && last[-2] == next_block
+          block.push [:branch_if, last[1], last[2], *last.drop(4)]
+        elsif last.first == :branch && last[2] == next_block
           # A branch where the if goes to the next block can branch only unless true.
           block.pop
-          block.push [:branch_unless, last[1], last[-1]]
+          block.push [:branch_unless, last[1], last[3], :not, *last.drop(4)]
         elsif last.first == :branch
           # A branch that doesn't go to the next block at all can be a branch if true
           # and then fallthrough to a new jump instruction.
           block.pop
-          block.push [:branch_if, last[1], last[-2]]
-          block.push [:jump, last[-1]]
+          block.push [:branch_if, last[1], last[2], *last.drop(4)]
+          block.push [:jump, last[3]]
         end
       end
 
