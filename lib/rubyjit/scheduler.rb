@@ -404,9 +404,6 @@ module RubyJIT
               # The instruction begins with the operation.
               insn = [op]
 
-              # Then the target register if the instruction has one.
-              insn.push node.props[:register] if node.produces_value?
-
               # Then any constant values or similar.
               [:line, :n, :value].each do |p|
                 insn.push node.props[p] if node.props.has_key?(p)
@@ -416,6 +413,9 @@ module RubyJIT
               node.inputs.with_input_name(:value).from_nodes.each do |input_values|
                 insn.push input_values.props[:register]
               end
+
+              # Then the target register if the instruction has one.
+              insn.push node.props[:register] if node.produces_value?
 
               # If it's a branch then the target basic blocks and the test.
               if node.op == :branch
