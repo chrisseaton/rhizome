@@ -193,8 +193,9 @@ module RubyJIT
             # forks like this.
 
             raise unless block.next.size == 2
-            fragment.last_control.output_to :true, fragments[block.next[0]].merge, :control
-            fragment.last_control.output_to :false, fragments[block.next[1]].merge, :control
+            branch = fragment.last_control
+            branch.output_to :true, fragments[block.next[0]].merge, :control
+            branch.output_to :false, fragments[block.next[1]].merge, :control
           else
             raise 'unsupported'
           end
