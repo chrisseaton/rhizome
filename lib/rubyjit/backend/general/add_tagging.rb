@@ -47,10 +47,30 @@ module RubyJIT
                 input.interdict IR::Node.new(:untag_fixnum)
               end
             end
+
+            tag_nodes = []
             
             add.outputs.edges.dup.each do |output|
               if output.value?
-                output.interdict IR::Node.new(:tag_fixnum)
+                tag_node = IR::Node.new(:tag_fixnum)
+                tag_nodes.push tag_node
+                output.interdict tag_node
+              end
+            end
+
+            if add.has_control_output?
+              control_to = add.outputs.edges.select { |e| e.control? }.first.to
+
+              # We've kept track of all the tag nodes we added, and we want to
+              # add a control flow edge from the tag to wherever control went
+              # after the add as otherwise the scheduler ends up with nodes
+              # coming out of the last control-flow node in a basic block,
+              # which it struggles to schedule correctly. We should really fix
+              # the scheduler instead.
+
+              tag_nodes.each do |tag_node|
+                add.output_to :control, tag_node
+                tag_node.output_to :control, control_to
               end
             end
             
