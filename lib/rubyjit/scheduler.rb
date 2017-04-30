@@ -302,7 +302,7 @@ module RubyJIT
     def first_in_block(first, nodes)
       first.inputs.from_nodes.each do |n|
         if nodes.include?(n)
-          return n
+          return first_in_block(n, nodes)
         end
       end
       first
