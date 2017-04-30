@@ -198,7 +198,7 @@ module RubyJIT
         names.any? { |n| n.to_s.end_with?('value') }
       end
       
-      # ....
+      # Insert a node in the middle of this edge.
       
       def interdict(node)
         from.output_to output_name, node, :value
