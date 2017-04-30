@@ -131,7 +131,6 @@ module RubyJIT
 
             if edge.input_name == :local_schedule
               attrs[:color] = 'darkgreen'
-              attrs[:constraint] = 'false'
             end
 
             # Combine all the attributes.
