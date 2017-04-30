@@ -32,38 +32,38 @@ module RubyJIT
 
           graph.find_nodes(:is_tagged_fixnum?).each do |is_tagged_fixnum|
             one = IR::Node.new(:constant, value: 1)
-            and_one = IR::Node.new(:int64_and)
+            and_one = IR::Node.new(:int64_and, argc: 1)
             not_zero = IR::Node.new(:int64_not_zero?)
             
-            one.output_to :value, and_one
+            one.output_to :value, and_one, :'arg(0)'
             and_one.output_to :value, not_zero
             
-            is_tagged_fixnum.replace not_zero, not_zero, [and_one], not_zero
+            is_tagged_fixnum.replace not_zero, not_zero, [and_one], not_zero, :receiver
             
             modified |= true
           end
 
           graph.find_nodes(:untag_fixnum).each do |untag_fixnum|
             one = IR::Node.new(:constant, value: 1)
-            shift_right = IR::Node.new(:int64_shift_right)
+            shift_right = IR::Node.new(:int64_shift_right, argc: 1)
             
-            one.output_to :value, shift_right
+            one.output_to :value, shift_right, :'arg(0)'
             
-            untag_fixnum.replace shift_right, shift_right, [shift_right], shift_right
+            untag_fixnum.replace shift_right, shift_right, [shift_right], shift_right, :receiver
             
             modified |= true
           end
 
           graph.find_nodes(:tag_fixnum).each do |tag_fixnum|
             one = IR::Node.new(:constant, value: 1)
-            shift_left = IR::Node.new(:int64_shift_left)
-            add = IR::Node.new(:int64_add)
+            shift_left = IR::Node.new(:int64_shift_left, argc: 1)
+            add = IR::Node.new(:int64_add, argc: 1)
             
-            one.output_to :value, shift_left
-            shift_left.output_to :value, add
-            one.output_to :value, add
+            one.output_to :value, shift_left, :'arg(0)'
+            shift_left.output_to :value, add, :receiver
+            one.output_to :value, add, :'arg(0)'
             
-            tag_fixnum.replace add, add, [shift_left], add
+            tag_fixnum.replace add, add, [shift_left], add, :receiver
             
             modified |= true
           end

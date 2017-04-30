@@ -65,7 +65,7 @@ module RubyJIT
         phi_register = phi.props[:register]
         merge = phi.inputs.with_input_name(:switch).nodes.first
 
-        phi.inputs.edges.each do |input|
+        phi.inputs.edges.dup.each do |input|
           if input.value?
             input_register = input.from.props[:register]
             if input_register != phi_register
@@ -78,20 +78,14 @@ module RubyJIT
               input.input_name =~ /value\((.*)\)/
               name = $1
 
-              last_control = merge.inputs.with_input_name(:"control(#{name})").nodes.first
-              schedule_edge = merge.inputs.edges.find { |e| e.input_name == :local_schedule }
-              next_in_schedule = schedule_edge.to
-
-              schedule_edge.remove
+              last_before_merge = merge.inputs.with_input_name(:"control(#{name})").nodes.first
+              local_schedule_edge = last_before_merge.outputs.edges.find { |e| e.output_name == :local_schedule }
 
               move = IR::Node.new(:move, from: input_register, register: phi_register)
-              last_control.output_to :local_schedule, move
-              move.output_to :local_schedule, next_in_schedule
-
-              input.from.output_to :value, move
-
-              to_remove.push input
-              move.output_to input.output_name, phi, input.input_name
+              local_schedule_edge.interdict move
+              input.from.output_to input.output_name, move, :value
+              move.output_to :value, input.to, input.input_name
+              input.remove
             end
           end
         end

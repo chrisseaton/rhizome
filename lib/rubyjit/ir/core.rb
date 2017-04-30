@@ -39,7 +39,7 @@ module RubyJIT
         receiver = Node.new(:self)
         arg = Node.new(:arg, n: 0)
         
-        op_node = Node.new(:"fixnum_#{{:+ => 'add', :- => 'sub'}[op]}")
+        op_node = Node.new(:"fixnum_#{{:+ => 'add', :- => 'sub'}[op]}", argc: 1)
         receiver.output_to :value, op_node, :receiver
         arg.output_to :value, op_node, :'arg(0)'
 

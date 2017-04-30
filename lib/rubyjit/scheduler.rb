@@ -435,12 +435,12 @@ module RubyJIT
             end
 
             # Send instructions and lowered equivalents need the arguments.
-            if [:send, :call_managed].include?(node.op)
+            if [:send, :call_managed, :int64_add, :int64_and, :int64_shift_left, :int64_shift_right].include?(node.op)
               insn.push node.inputs.with_input_name(:receiver).from_nodes.first.props[:register]
 
               if node.op == :send
                 insn.push node.props[:name]
-              else
+              elsif node.op == :call_managed
                 insn.push node.inputs.with_input_name(:name).from_nodes.first.props[:register]
               end
 
@@ -450,7 +450,7 @@ module RubyJIT
             end
 
             # Then the target register if the instruction has one.
-            insn.push node.props[:register] if insn && node.produces_value?
+            insn.push node.props[:register] if insn && (node.produces_value? || node.op == :move)
 
             # If it's a branch then the target basic blocks and the test.
             if node.op == :branch

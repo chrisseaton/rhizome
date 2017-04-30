@@ -44,7 +44,7 @@ module RubyJIT
           graph.find_nodes(:fixnum_add).each do |add|
             add.inputs.edges.dup.each do |input|
               if input.value?
-                input.interdict IR::Node.new(:untag_fixnum)
+                input.interdict IR::Node.new(:untag_fixnum), :value, :value
               end
             end
 
@@ -54,12 +54,12 @@ module RubyJIT
               if output.value?
                 tag_node = IR::Node.new(:tag_fixnum)
                 tag_nodes.push tag_node
-                output.interdict tag_node
+                output.interdict tag_node, :value, :value
               end
             end
 
             if add.has_control_output?
-              control_to = add.outputs.edges.select { |e| e.control? }.first.to
+              control = add.outputs.edges.select { |e| e.control? }.first
 
               # We've kept track of all the tag nodes we added, and we want to
               # add a control flow edge from the tag to wherever control went
@@ -70,11 +70,12 @@ module RubyJIT
 
               tag_nodes.each do |tag_node|
                 add.output_to :control, tag_node
-                tag_node.output_to :control, control_to
+                tag_node.output_to :control, control.to, control.input_name
+                control.remove
               end
             end
             
-            add.replace IR::Node.new(:int64_add)
+            add.replace IR::Node.new(:int64_add, argc: 1)
             
             modified |= true
           end

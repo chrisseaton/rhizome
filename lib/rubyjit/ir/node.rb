@@ -48,10 +48,13 @@ module RubyJIT
 
       def output_to(output_name, to, input_name=output_name)
         # We never want to connect a node to itself.
-        
         raise if to == self
 
+        # Values going into a phi should be named.
         raise input_name.to_s if to.op == :phi && !input_name.to_s.start_with?('value(') && ![:switch, :local_schedule, :global_schedule].include?(input_name)
+
+        # There should not be more than one local schedule edge coming out of a node.
+        raise if output_name == :local_schedule && !outputs.with_output_name(:local_schedule).edges.empty?
 
         edge = Edge.new(self, output_name, to, input_name)
 
@@ -130,13 +133,13 @@ module RubyJIT
       # the current node, and a node which now produces the value that was
       # previously coming from this node.
 
-      def replace(start, finish=start, users=[start], value=finish)
+      def replace(start, finish=start, users=[start], value=finish, user_input_name=nil)
         inputs.edges.each do |edge|
           if edge.control?
             edge.from.output_to edge.output_name, start, edge.input_name
           else
             users.each do |user|
-              edge.from.output_to edge.output_name, user, edge.input_name
+              edge.from.output_to edge.output_name, user, user_input_name || edge.input_name
             end
           end
         end
@@ -195,15 +198,15 @@ module RubyJIT
       # Is this a value edge?
 
       def value?
-        names.any? { |n| n.to_s.end_with?('value') }
+        names.any? { |n| n.to_s.start_with?('value') }
       end
       
       # Insert a node in the middle of this edge.
       
-      def interdict(node)
-        from.output_to output_name, node, :value
-        node.output_to :value, to, input_name
+      def interdict(node, inner_output_name=output_name, inner_input_name=input_name)
         remove
+        from.output_to output_name, node, inner_output_name
+        node.output_to inner_input_name, to, input_name
       end
 
       # Remove an edge by removing the references from the nodes to it.
