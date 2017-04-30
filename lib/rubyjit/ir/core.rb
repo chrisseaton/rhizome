@@ -54,8 +54,8 @@ module RubyJIT
         graph.start.output_to :control, branch
         guard.output_to :value, branch, :condition
 
-        branch.output_to :control, op_node, :true
-        branch.output_to :control, mega_send, :false
+        branch.output_to :true, op_node, :control
+        branch.output_to :false, mega_send, :control
 
         merge = IR::Node.new(:merge)
         op_node.output_to :control, merge, :'control(fixnum)'
