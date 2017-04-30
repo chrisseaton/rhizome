@@ -375,139 +375,141 @@ module RubyJIT
 
       # Look at each node that begins a basic block.
 
-      graph.all_nodes.each do |node|
-        if node.begins_block?
-          original_first_node = node
-          node = first_in_block(original_first_node, nodes_in_block(original_first_node))
-          first_node = node
+      basic_block_starters = graph.all_nodes.select { |n| n.begins_block? }
 
-          # We're going to create an array of operations for this basic
-          # block.
+      last_basic_block_starter = basic_block_starters.select { |s| nodes_in_block(s).any? { |n| n.op == :finish } }.first
 
-          block = []
-          next_to_last_control = nil
+      basic_block_starters.delete last_basic_block_starter
+      basic_block_starters.push last_basic_block_starter
 
-          # Follow the local sequence.
-          
-          begin
-            # We don't want to include operations that are just there to form
-            # branches or anchor points in the graph such as start and merge.
+      basic_block_starters.each do |node|
+        original_first_node = node
+        node = first_in_block(original_first_node, nodes_in_block(original_first_node))
+        first_node = node
 
-            unless [:start, :merge].include?(node.op)
-              op = node.op
+        # We're going to create an array of operations for this basic
+        # block.
 
-              # We rename finish to return to match the switch from the
-              # declarative style of the graph to the imperative style
-              # of the list of operations.
-              op = :return if op == :finish
+        block = []
+        next_to_last_control = nil
 
-              # The instruction begins with the operation.
-              insn = [op]
+        # Follow the local sequence.
 
-              # Then any constant values or similar.
-              [:line, :n, :value].each do |p|
-                insn.push node.props[p] if node.props.has_key?(p)
-              end
+        begin
+          # We don't want to include operations that are just there to form
+          # branches or anchor points in the graph such as start and merge.
 
-              # Then any input registers.
-              node.inputs.with_input_name(:value).from_nodes.each do |input_values|
-                insn.push input_values.props[:register]
-              end
+          unless [:start, :merge].include?(node.op)
+            op = node.op
 
-              # Phi instructions need pairs of source registers with the blocks they came from.
-              if node.op == :phi
-                node.inputs.edges.each do |input|
-                  if input.input_name =~ /^value\((.+)\)$/
-                    n = $1.to_i
-                    insn.push n
-                    insn.push input.from.props[:register]
-                  end
-                end
-                # Elide phi instructions if register allocation has run correctly and values are
-                # already in the correct registers.
-                insn = nil if insn.drop(2).select.with_index{ |_,i| i.even? }.uniq.size == 1
-              end
+            # We rename finish to return to match the switch from the
+            # declarative style of the graph to the imperative style
+            # of the list of operations.
+            op = :return if op == :finish
 
-              # Send instructions and lowered equivalents need the arguments.
-              if [:send, :call_managed].include?(node.op)
-                insn.push node.inputs.with_input_name(:receiver).from_nodes.first.props[:register]
+            # The instruction begins with the operation.
+            insn = [op]
 
-                if node.op == :send
-                  insn.push node.props[:name]
-                else
-                  insn.push node.inputs.with_input_name(:name).from_nodes.first.props[:register]
-                end
-
-                node.props[:argc].times do |n|
-                  insn.push node.inputs.with_input_name(:"arg(#{n})").from_nodes.first.props[:register]
-                end
-              end
-
-              # Then the target register if the instruction has one.
-              insn.push node.props[:register] if insn && node.produces_value?
-
-              # If it's a branch then the target basic blocks and the test.
-              if node.op == :branch
-                insn.push node.inputs.with_input_name(:condition).from_nodes.first.props[:register]
-                
-                [:true, :false].each do |branch|
-                  insn.push node.outputs.with_input_name(branch).to_nodes.first
-                end
-                
-                if node.props[:test]
-                  insn.push node.props[:test]
-                end
-              end
-
-              # Kind instructions need the kind.
-              if node.op == :kind_is?
-                insn.push node.props[:kind]
-              end
-
-              # Add the instruction to the block.
-              block.push insn if insn
+            # Then any constant values or similar.
+            [:line, :n, :value].each do |p|
+              insn.push node.props[p] if node.props.has_key?(p)
             end
 
-            next_to_last_control = node if node.has_control_output?
+            # Then any input registers.
+            node.inputs.with_input_name(:value).from_nodes.each do |input_values|
+              insn.push input_values.props[:register]
+            end
 
-            # Follow the local schedule edge to the next node.
-            node = node.outputs.with_output_name(:local_schedule).to_nodes.first
-          end while node && node.op != :merge
+            # Phi instructions need pairs of source registers with the blocks they came from.
+            if node.op == :phi
+              node.inputs.edges.each do |input|
+                if input.input_name =~ /^value\((.+)\)$/
+                  n = $1.to_i
+                  insn.push n
+                  insn.push input.from.props[:register]
+                end
+              end
+              # Elide phi instructions if register allocation has run correctly and values are
+              # already in the correct registers.
+              insn = nil if insn.drop(2).select.with_index{ |_,i| i.even? }.uniq.size == 1
+            end
 
-          # If the last node is a merge, we need to remember which merge index this is.
+            # Send instructions and lowered equivalents need the arguments.
+            if [:send, :call_managed].include?(node.op)
+              insn.push node.inputs.with_input_name(:receiver).from_nodes.first.props[:register]
 
-          if node && node.op == :merge
-            next_to_last_control.outputs.with_output_name(:control).edges.first.input_name =~ /^control\((.+)\)$/
-            n = $1.to_i
-            merge_index_to_first_node[n] = first_node
+              if node.op == :send
+                insn.push node.props[:name]
+              else
+                insn.push node.inputs.with_input_name(:name).from_nodes.first.props[:register]
+              end
+
+              node.props[:argc].times do |n|
+                insn.push node.inputs.with_input_name(:"arg(#{n})").from_nodes.first.props[:register]
+              end
+            end
+
+            # Then the target register if the instruction has one.
+            insn.push node.props[:register] if insn && node.produces_value?
+
+            # If it's a branch then the target basic blocks and the test.
+            if node.op == :branch
+              insn.push node.inputs.with_input_name(:condition).from_node.props[:register]
+
+              [:true, :false].each do |branch|
+                target = node.outputs.with_output_name(branch).to_nodes.first
+                raise unless target
+                insn.push target
+              end
+
+              if node.props[:test]
+                insn.push node.props[:test]
+              end
+            end
+
+            # Kind instructions need the kind.
+            if node.op == :kind_is?
+              insn.push node.props[:kind]
+            end
+
+            # Add the instruction to the block.
+            block.push insn if insn
           end
 
-          # Add a jump instruction if this block was going to just flow into the next
-          # - we'll remove it later if the block followed it anyway and we can just
-          # fallthrough.
+          next_to_last_control = node if node.has_control_output?
 
-          unless [:return, :branch].include?(block.last.first)
-            block.push [:jump, node]
-          end
+          # Follow the local schedule edge to the next node.
+          node = node.outputs.with_output_name(:local_schedule).to_nodes.first
+        end while node && node.op != :merge
 
-          # If this block ends with the return instruction then we need to keep it
-          # for last, otherwise add the block to the list of blocks.
+        # If the last node is a merge, we need to remember which merge index this is.
 
-          if block.last.first == :return
-            first_node_last_block = first_node
-            last_block = block
-          else
-            first_node_to_block_index[original_first_node] = blocks.size
-            first_node_to_block_index[first_node] = blocks.size
-            blocks.push block
+        if node && node.op == :merge
+          next_to_last_control.outputs.with_output_name(:control).edges.first.input_name =~ /^control\((.+)\)$/
+          n = $1.to_i
+          merge_index_to_first_node[n] = first_node
+        end
+
+        # Add a jump instruction if this block was going to just flow into the next
+        # - we'll remove it later if the block followed it anyway and we can just
+        # fallthrough.
+
+        unless [:return, :branch].include?(block.last.first)
+          begin
+            block.push [:jump, next_to_last_control.outputs.with_output_name(:control).to_node]
+          rescue
+            block.push [:jump, :broken]
           end
         end
+
+        first_node_to_block_index[original_first_node] = blocks.size
+        first_node_to_block_index[first_node] = blocks.size
+        blocks.push block
       end
 
       # Record the number that this basic block has and then add it to the list of basic blocks.
 
       first_node_to_block_index[first_node_last_block] = blocks.size
-      blocks.push last_block
 
       # Go back through the basic blocks and update some references that were to things that
       # hadn't been decided yet.
@@ -531,10 +533,10 @@ module RubyJIT
       # work.
 
       blocks.each_with_index do |block, n|
-        next_block = n + 1
+        next_block = :"block#{n + 1}"
         last = block.last
 
-        if last.first == :jump && last.last == next_block
+        if last == [:jump, next_block]
           # A jump that just goes to the next block can be removed and left to fall through.
           block.pop
         elsif last.first == :branch && last[3] == next_block
@@ -544,7 +546,9 @@ module RubyJIT
         elsif last.first == :branch && last[2] == next_block
           # A branch where the if goes to the next block can branch only unless true.
           block.pop
-          block.push [:branch_unless, last[1], last[3], :not, *last.drop(4)]
+          test = last.drop(4)
+          test = [:not] + test unless test.empty?
+          block.push [:branch_unless, last[1], last[3], *test]
         elsif last.first == :branch
           # A branch that doesn't go to the next block at all can be a branch if true
           # and then fallthrough to a new jump instruction.
