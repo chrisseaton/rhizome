@@ -75,8 +75,8 @@ module RubyJIT
 
               # The branch goes to either the monomorphic case or the megamorphic case.
 
-              branch.output_to :control, mono_send, :true
-              branch.output_to :control, mega_send, :false
+              branch.output_to :true, mono_send, :control
+              branch.output_to :false, mega_send, :control
 
               # After running one of the calls we then merge the control flow
               # and the return value.
