@@ -547,7 +547,6 @@ module RubyJIT
           # A branch where the if goes to the next block can branch only unless true.
           block.pop
           test = last.drop(4)
-          test = [:not] + test unless test.empty?
           block.push [:branch_unless, last[1], last[3], *test]
         elsif last.first == :branch
           # A branch that doesn't go to the next block at all can be a branch if true
