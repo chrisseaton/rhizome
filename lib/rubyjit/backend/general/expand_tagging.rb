@@ -30,6 +30,8 @@ module RubyJIT
         def run(graph)
           modified = false
 
+          # Replace is_tagged_fixnum?(a) with int64_not_zero?(int64_and(a, 1))
+
           graph.find_nodes(:is_tagged_fixnum?).each do |is_tagged_fixnum|
             one = IR::Node.new(:constant, value: 1)
             and_one = IR::Node.new(:int64_and, argc: 1)
@@ -43,6 +45,8 @@ module RubyJIT
             modified |= true
           end
 
+          # Replace untag_fixnum(a) with int64_shift_right(a, 1)
+
           graph.find_nodes(:untag_fixnum).each do |untag_fixnum|
             one = IR::Node.new(:constant, value: 1)
             shift_right = IR::Node.new(:int64_shift_right, argc: 1)
@@ -53,6 +57,8 @@ module RubyJIT
             
             modified |= true
           end
+
+          # Replace tag_fixnum(a) with int64_add(int64_shift_left(a, 1), 1)
 
           graph.find_nodes(:tag_fixnum).each do |tag_fixnum|
             one = IR::Node.new(:constant, value: 1)
