@@ -253,7 +253,7 @@ module RubyJIT
       }
     end
     
-    # ...
+    # Get a native memory address from proc.
     
     def self.from_proc(ret_type, arg_types, &block)
       if Config::RBX || Config::JRUBY
