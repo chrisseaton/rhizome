@@ -24,6 +24,8 @@
 require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
+raise 'this experiment only works on AMD64' unless RubyJIT::Config::AMD64
+
 handles = RubyJIT::Handles.new(RubyJIT::Config::WORD_BITS)
 interface = RubyJIT::Interface.new(handles)
 
