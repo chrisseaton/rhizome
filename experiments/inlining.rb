@@ -24,6 +24,8 @@
 require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
+puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+
 interpreter = RubyJIT::Interpreter.new
 profile = RubyJIT::Profile.new
 
@@ -44,20 +46,26 @@ passes_runner = RubyJIT::Passes::Runner.new(
 
 passes_runner.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'outer.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'outer.pdf'
 
-viz = RubyJIT::IR::Graphviz.new(RubyJIT::IR::Core.new.fixnum_op(:+, nil))
-viz.visualise 'inner.pdf'
+  viz = RubyJIT::IR::Graphviz.new(RubyJIT::IR::Core.new.fixnum_op(:+, nil))
+  viz.visualise 'inner.pdf'
+end
 
 inlining_pass = RubyJIT::Passes::Inlining.new
 inlining_pass.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'inlined.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'inlined.pdf'
+end
 
 postbuild = RubyJIT::Passes::PostBuild.new
 postbuild.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'post.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'post.pdf'
+end

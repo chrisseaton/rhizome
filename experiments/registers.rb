@@ -24,6 +24,8 @@
 require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
+puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+
 builder = RubyJIT::IR::Builder.new
 builder.build RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT
 graph = builder.graph
@@ -44,5 +46,7 @@ scheduler.schedule graph
 registers = RubyJIT::RegisterAllocator.new
 registers.allocate_infinite graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'infinite-registers.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'infinite-registers.pdf'
+end

@@ -24,6 +24,8 @@
 require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
+puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+
 interpreter = RubyJIT::Interpreter.new
 profile = RubyJIT::Profile.new
 
@@ -46,8 +48,10 @@ passes_runner = RubyJIT::Passes::Runner.new(
 
 passes_runner.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'before.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'before.pdf'
+end
 
 passes_runner = RubyJIT::Passes::Runner.new(
     RubyJIT::Backend::General::AddTagging.new
@@ -55,8 +59,10 @@ passes_runner = RubyJIT::Passes::Runner.new(
 
 passes_runner.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'after-add-tagging.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'after-add-tagging.pdf'
+end
 
 passes_runner = RubyJIT::Passes::Runner.new(
     RubyJIT::Backend::General::ExpandTagging.new
@@ -64,8 +70,10 @@ passes_runner = RubyJIT::Passes::Runner.new(
 
 passes_runner.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'after-expand-tagging.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'after-expand-tagging.pdf'
+end
 
 passes_runner = RubyJIT::Passes::Runner.new(
     RubyJIT::Backend::General::SpecialiseBranches.new
@@ -73,8 +81,10 @@ passes_runner = RubyJIT::Passes::Runner.new(
 
 passes_runner.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'after-specialise-branches.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'after-specialise-branches.pdf'
+end
 
 passes_runner = RubyJIT::Passes::Runner.new(
     RubyJIT::Backend::General::ExpandCalls.new
@@ -82,8 +92,10 @@ passes_runner = RubyJIT::Passes::Runner.new(
 
 passes_runner.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'after-expand-calls.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'after-expand-calls.pdf'
+end
 
 scheduler = RubyJIT::Scheduler.new
 scheduler.schedule graph
@@ -91,8 +103,11 @@ scheduler.schedule graph
 register_allocator = RubyJIT::RegisterAllocator.new
 register_allocator.allocate_infinite graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'scheduled-register-allocated.pdf'
+
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'scheduled-register-allocated.pdf'
+end
 
 blocks = scheduler.linearize(graph)
 

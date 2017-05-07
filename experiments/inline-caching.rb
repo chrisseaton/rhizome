@@ -24,6 +24,8 @@
 require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
+puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+
 interpreter = RubyJIT::Interpreter.new
 profile = RubyJIT::Profile.new
 
@@ -43,8 +45,10 @@ passes_runner = RubyJIT::Passes::Runner.new(
 
 passes_runner.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'before.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'before.pdf'
+end
 
 passes_runner = RubyJIT::Passes::Runner.new(
     RubyJIT::Passes::InlineCaching.new
@@ -52,5 +56,8 @@ passes_runner = RubyJIT::Passes::Runner.new(
 
 passes_runner.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'after.pdf'
+
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'after.pdf'
+end

@@ -24,6 +24,8 @@
 require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
+puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+
 builder = RubyJIT::IR::Builder.new
 builder.build RubyJIT::Fixtures::NAMED_COMPARE_BYTECODE_RUBYJIT
 graph = builder.graph
@@ -38,5 +40,7 @@ passes_runner = RubyJIT::Passes::Runner.new(
 
 passes_runner.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'named-compare.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'named-compare.pdf'
+end

@@ -24,6 +24,8 @@
 require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
+puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+
 builder = RubyJIT::IR::Builder.new
 builder.build RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT
 graph = builder.graph
@@ -41,18 +43,24 @@ passes_runner.run graph
 scheduler = RubyJIT::Scheduler.new
 scheduler.partially_order graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'order.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'order.pdf'
+end
 
 scheduler.global_schedule graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'global.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'global.pdf'
+end
 
 scheduler.local_schedule graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'local.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'local.pdf'
+end
 
 register_allocator = RubyJIT::RegisterAllocator.new
 register_allocator.allocate_infinite graph

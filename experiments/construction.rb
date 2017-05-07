@@ -24,6 +24,8 @@
 require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
+puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+
 builder = RubyJIT::IR::Builder.new
 basic_blocks = builder.basic_blocks(RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT)
 
@@ -33,15 +35,21 @@ basic_blocks.each_value do |block|
     p insn
   end
   fragment = builder.basic_block_to_fragment(block.insns)
-  viz = RubyJIT::IR::Graphviz.new(fragment)
-  viz.visualise "block#{block.start}.pdf"
+
+  if RubyJIT::IR::Graphviz.available?
+    viz = RubyJIT::IR::Graphviz.new(fragment)
+    viz.visualise "block#{block.start}.pdf"
+  end
 end
 
 builder = RubyJIT::IR::Builder.new
 builder.build RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT
 graph = builder.graph
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'built.pdf'
+
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'built.pdf'
+end
 
 postbuild = RubyJIT::Passes::PostBuild.new
 postbuild.run graph
@@ -53,5 +61,7 @@ passes_runner = RubyJIT::Passes::Runner.new(
 
 passes_runner.run graph
 
-viz = RubyJIT::IR::Graphviz.new(graph)
-viz.visualise 'post.pdf'
+if RubyJIT::IR::Graphviz.available?
+  viz = RubyJIT::IR::Graphviz.new(graph)
+  viz.visualise 'post.pdf'
+end
