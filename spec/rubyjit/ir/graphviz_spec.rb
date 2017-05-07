@@ -68,7 +68,7 @@ describe RubyJIT::IR::Graphviz do
   
   # Only run these specs if dot appears to be installed
 
-  if `dot -V 2>&1`.start_with?('dot - graphviz')
+  if RubyJIT::IR::Graphviz.available?
 
     describe '#visualise' do
 

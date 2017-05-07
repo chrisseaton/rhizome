@@ -29,6 +29,12 @@ module RubyJIT
     # Graphviz language and the dot layout tool to generate PDFs.
 
     class Graphviz
+
+      # Is the Graphviz executable available?
+
+      def self.available?
+        `dot -V 2>&1`.start_with?('dot - graphviz')
+      end
       
       # Create a visualiser for a given graph, or a graph fragment.
 
