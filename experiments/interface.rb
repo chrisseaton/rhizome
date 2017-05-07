@@ -38,28 +38,14 @@ s = handles.to_native(:+)
 if RubyJIT::Config::AMD64
   machine_code = [
     0x56,                   # push rsi      push the argument
-    0x48, 0xb8, (s >>  0) & 0xff,
-                (s >>  8) & 0xff,
-                (s >> 16) & 0xff,
-                (s >> 24) & 0xff,
-                (s >> 32) & 0xff,
-                (s >> 40) & 0xff,
-                (s >> 48) & 0xff,
-                (s >> 56) & 0xff,
+    0x48, 0xb8, *[s].pack('Q').bytes,
                             # mov ... rax   rax = the method name handle
     0x50,                   # push rax      push the method name handle
     0x57,                   # push rdi      push the receiver
     0x48, 0x89, 0xe7,       # mov rdi rsp   rdi = the address of last value we pushed
-    0x48, 0xc7, 0xc6, 0x01, 0x00, 0x00, 0x00,
+    0x48, 0xc7, 0xc6, *[1].pack('L').bytes,
                             # mov 1 rsi     rsi = the number of arguments
-    0x48, 0xb8, (c >>  0) & 0xff,
-                (c >>  8) & 0xff,
-                (c >> 16) & 0xff,
-                (c >> 24) & 0xff,
-                (c >> 32) & 0xff,
-                (c >> 40) & 0xff,
-                (c >> 48) & 0xff,
-                (c >> 56) & 0xff,
+    0x48, 0xb8, *[c].pack('Q').bytes,
                             # mov ... rax   rax = the address of the call to managed
     0xff, 0xd0,             # call *rax     call to managed
     0x5b,                   # pop rbx       pop the receiver
