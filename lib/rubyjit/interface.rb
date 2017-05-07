@@ -31,7 +31,8 @@ module RubyJIT
   
     def initialize(handles)
       @handles = handles
-      @call_managed_address = create_call_managed_address
+      @call_managed_function = create_call_managed_function
+      @call_managed_address = @call_managed_function.to_i
     end
     
     # Call a native function (passed in as a proc).
@@ -45,7 +46,7 @@ module RubyJIT
     # Create an address for calling back into Ruby that you can call from
     # native code.
     
-    def create_call_managed_address
+    def create_call_managed_function
       Memory.from_proc(:long, [:long, :long]) do |args_pointer, args_count|
         # Read the receiver, method name, and then the args from the buffer
         buffer = Memory.new((args_count + 2) * Config::WORD_BYTES, args_pointer)

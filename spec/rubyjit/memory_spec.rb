@@ -217,15 +217,13 @@ describe RubyJIT::Memory do
     end
   
   end
-  
-  describe '#free' do
-    
-    it 'raises a StandardError if the memory has been previously freed' do
-      memory = RubyJIT::Memory.new(1024)
-      memory.free
-      expect { memory.free }.to raise_error(StandardError)
+
+  describe '.from_proc' do
+
+    it 'produces a native memory address' do
+      expect(RubyJIT::Memory.from_proc(:long, [:long]) { }.to_i).to be_an(Integer)
     end
-    
+
   end
 
 end

@@ -253,26 +253,6 @@ module RubyJIT
       }
     end
     
-    # Get a native memory address from proc.
-    
-    def self.from_proc(ret_type, arg_types, &block)
-      if Config::RBX || Config::JRUBY
-        FFI::Function.new(ret_type, arg_types, &block).address
-      else
-        types_map = {
-          long: Fiddle::TYPE_LONG
-        }
-        
-        $block = block
-        
-        Class.new(Fiddle::Closure) {
-          def call(*args)
-            $block.call(*args)
-          end
-        }.new(types_map[ret_type], arg_types.map(&types_map)).to_i
-      end
-    end
-    
     # Free the memory.
     
     def free
@@ -281,7 +261,27 @@ module RubyJIT
       POSIX::munmap(@address, @size)
       @address = nil
     end
-    
+
+    # Get a native memory address from proc.
+
+    def self.from_proc(ret_type, arg_types, &block)
+      if Config::RBX || Config::JRUBY
+        FFI::Function.new(ret_type, arg_types, &block)
+      else
+        types_map = {
+            long: Fiddle::TYPE_LONG
+        }
+
+        $block = block
+
+        Class.new(Fiddle::Closure) {
+          def call(*args)
+            $block.call(*args)
+          end
+        }.new(types_map[ret_type], arg_types.map(&types_map))
+      end
+    end
+
     private
     
     def protect
