@@ -84,7 +84,7 @@ module RubyJIT
         const_set name, 0x40 + encoding
       end
 
-      # An assembler allows machine code instruction bytes to emitted.
+      # An assembler emits machine code bytes for given assembly instructions.
 
       class Assembler
 

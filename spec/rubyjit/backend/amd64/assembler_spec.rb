@@ -84,6 +84,11 @@ describe RubyJIT::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0x89, 0x65, 0x0a]
     end
 
+    it 'correctly assembles negative offsets' do
+      @assembler.mov RubyJIT::Backend::AMD64::RSP, RubyJIT::Backend::AMD64::RBP - 10
+      expect(@assembler.bytes).to eql [0x48, 0x89, 0x65, 0xf6]
+    end
+
     it 'handles all low registers' do
       RubyJIT::Backend::AMD64::LOW_REGISTERS.each do |r1|
         RubyJIT::Backend::AMD64::LOW_REGISTERS.each do |r2|

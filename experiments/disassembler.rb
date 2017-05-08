@@ -1,4 +1,4 @@
-# Copyright (c) 2016 Chris Seaton
+# Copyright (c) 2016-2017 Chris Seaton
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,32 +19,16 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubyjit/config'
-require 'rubyjit/memory'
-require 'rubyjit/handles'
-require 'rubyjit/interface'
-require 'rubyjit/frontend/mri_parser'
-require 'rubyjit/frontend/rbx_parser'
-require 'rubyjit/frontend/jruby_parser'
-require 'rubyjit/interpreter'
-require 'rubyjit/profile'
-require 'rubyjit/ir/node'
-require 'rubyjit/ir/graph'
-require 'rubyjit/ir/graphviz'
-require 'rubyjit/ir/builder'
-require 'rubyjit/ir/core'
-require 'rubyjit/passes/post_build'
-require 'rubyjit/passes/dead_code'
-require 'rubyjit/passes/no_choice_phis'
-require 'rubyjit/passes/inline_caching'
-require 'rubyjit/passes/inlining'
-require 'rubyjit/passes/deoptimise'
-require 'rubyjit/passes/runner'
-require 'rubyjit/backend/general/add_tagging'
-require 'rubyjit/backend/general/expand_tagging'
-require 'rubyjit/backend/general/specialise_branches'
-require 'rubyjit/backend/general/expand_calls'
-require 'rubyjit/backend/amd64/assembler'
-require 'rubyjit/backend/amd64/disassembler'
-require 'rubyjit/scheduler'
-require 'rubyjit/registers'
+# Illustrates using the AM64 disassembler directly.
+
+require_relative '../lib/rubyjit'
+
+raise 'this experiment only works on AMD64' unless RubyJIT::Config::AMD64
+
+machine_code = '554889e548897df8488975f0488b45f8488b4df04801c85dc3'.scan(/../).map { |b| b.to_i(16) }
+
+disassembler = RubyJIT::Backend::AMD64::Disassembler.new(machine_code)
+
+while disassembler.more?
+  puts disassembler.next
+end
