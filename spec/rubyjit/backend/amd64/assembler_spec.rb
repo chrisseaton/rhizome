@@ -116,6 +116,36 @@ describe RubyJIT::Backend::AMD64::Assembler do
 
   end
 
+  describe '#jmp' do
+
+    it 'correctly assembles a backward jump' do
+      head = @assembler.label
+      @assembler.jmp head
+      expect(@assembler.bytes).to eql [0xe9, 0xfb, 0xff, 0xff, 0xff]
+    end
+
+    it 'correctly assembles a backward jump over another instruction' do
+      head = @assembler.label
+      @assembler.nop
+      @assembler.jmp head
+      expect(@assembler.bytes).to eql [0x90, 0xe9, 0xfa, 0xff, 0xff, 0xff]
+    end
+
+    it 'correctly assembles a forward jump' do
+      head = @assembler.jmp
+      @assembler.label head
+      expect(@assembler.bytes).to eql [0xe9, 0x00, 0x00, 0x00, 0x00]
+    end
+
+    it 'correctly assembles a forward jump over another instruction' do
+      head = @assembler.jmp
+      @assembler.nop
+      @assembler.label head
+      expect(@assembler.bytes).to eql [0xe9, 0x01, 0x00, 0x00, 0x00, 0x90]
+    end
+
+  end
+
   describe '#ret' do
 
     it 'correctly assembles' do

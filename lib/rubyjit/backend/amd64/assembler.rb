@@ -140,6 +140,33 @@ module RubyJIT
           emit prefix if prefix
           emit 0x58 | encoding
         end
+        
+        def jmp(label=nil)
+          label = General::Label.new(self) unless label
+          emit 0xe9
+
+          # Does this label already have a location?
+
+          if label.marked?
+            # If it does, emit the offset to that location.
+            emit_sint32 label.location - location - 4
+          else
+            # If it doesn't, remember that we want to patch this location in the
+            # future and emit 0s for now.
+            label.patch_point -5
+            emit 0x00
+            emit 0x00
+            emit 0x00
+            emit 0x00
+          end
+          label
+        end
+        
+        def label(label=nil)
+          label = General::Label.new(self) unless label
+          label.mark
+          label
+        end
 
         def nop
           emit 0x90
@@ -148,11 +175,23 @@ module RubyJIT
         def ret
           emit 0xc3
         end
+
+        def location
+          bytes.size
+        end
+
+        def patch(location, value)
+          bytes[location...location+4] = [value].pack('l<').bytes
+        end
         
         private
 
         def emit(*values)
           bytes.push *(values.map { |b| b & 0xff })
+        end
+
+        def emit_sint32(value)
+          emit *[value].pack('l<').bytes
         end
 
       end

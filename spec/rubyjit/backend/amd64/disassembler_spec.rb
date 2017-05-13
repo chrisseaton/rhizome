@@ -105,6 +105,37 @@ describe RubyJIT::Backend::AMD64::Disassembler do
 
       end
 
+      it 'jmp with a backward jump' do
+        head = @assembler.label
+        @assembler.jmp head
+        @disassemble.call
+        expect(@disassembler.next).to eql '0x0000000000000000  jmp -5               ; 0xe9fbffffff'
+      end
+
+      it 'jmp with a backward jump over another instruction' do
+        head = @assembler.label
+        @assembler.nop
+        @assembler.jmp head
+        @disassemble.call
+        expect(@disassembler.next).to eql '0x0000000000000000  nop                  ; 0x90        '
+        expect(@disassembler.next).to eql '0x0000000000000001  jmp -6               ; 0xe9faffffff'
+      end
+
+      it 'jmp with a forward jump' do
+        head = @assembler.jmp
+        @assembler.label head
+        @disassemble.call
+        expect(@disassembler.next).to eql '0x0000000000000000  jmp 0                ; 0xe900000000'
+      end
+
+      it 'jmp with a forward jump over another instruction' do
+        head = @assembler.jmp
+        @assembler.nop
+        @assembler.label head
+        @disassemble.call
+        expect(@disassembler.next).to eql '0x0000000000000000  jmp 1                ; 0xe901000000'
+      end
+
       it 'ret' do
         @assembler.ret
         @disassemble.call

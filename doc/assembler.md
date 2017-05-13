@@ -94,6 +94,49 @@ The assembler object is just a wrapper around an array of bytes, with a method
 for each instruction which pushes more bytes onto the end of the array, based on
 the rules for encoding AMD64 machine code.
 
+#### Labels and jumps
+
+The only complexity in the interface to the assembler (so aside from the actual
+encoding, described below) is labels and jumps.
+
+Assembly code doesn't have structured control-flow, such as `if` statements and
+`while` loops. Instead it has labels and instructions similar to `goto`
+statements as languages such as C have.
+
+For example, an infinite loop has a label, a loop body, and then a jump back to
+the label. The label is a Ruby object that the assemler gives you.
+
+```ruby
+head = assembler.label
+# Loop body here
+assembler.jmp head
+```
+
+This works well for backward jumps, because when we emit the `jmp` instruction
+we already know where the `head` label was. If we want to jump forwards, to jump
+over conditional code, we won't know the location of the label when we want to
+emit the jump.
+
+When we want to do this we emit a `jmp` instruction (or similar such as `jne`,
+meaning jump-if-not-equal in the previous `cmp` comparison), but don't pass a
+label object. Instead the assembler will pass a new label back to us, which we
+can then pass to the `label` method later.
+
+```ruby
+assembler.cmp rX, rY
+else_part = assembler.jne
+# then part here
+finished = assembler.jmp
+assembler.label else_part
+# else part here
+assembler.label finished
+```
+
+Internally, the assembler emits a jump to `0` when you jump to a label that
+hasn't been defined yet, and records all the places that it has done so. When
+you do define the label later on, it goes back to the record of places where the
+jump was used before it was defined and puts the actual address in.
+
 ### More technical details
 
 The rules for encoding assembly instructions to machine code bytes in AMD64 are

@@ -60,6 +60,8 @@ module RubyJIT
             insn = 'ret'
           elsif byte == 0x90
             insn = 'nop'
+          elsif byte == 0xe9
+            insn = "jmp #{shift_sint32}"
           elsif byte & 0xf8 == 0x50
             insn = "push #{register(prefix, byte & 0x7)}"
           elsif byte & 0xf8 == 0x58
@@ -102,6 +104,10 @@ module RubyJIT
           byte = @bytes[@pos]
           @pos += 1
           byte
+        end
+
+        def shift_sint32
+          [shift, shift, shift, shift].pack('c*').unpack('l<').first
         end
         
       end
