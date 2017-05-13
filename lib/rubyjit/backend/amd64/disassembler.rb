@@ -58,6 +58,8 @@ module RubyJIT
 
           if byte == 0xc3
             insn = 'ret'
+          elsif byte == 0x90
+            insn = 'nop'
           elsif byte & 0xf8 == 0x50
             insn = "push #{register(prefix, byte & 0x7)}"
           elsif byte & 0xf8 == 0x58

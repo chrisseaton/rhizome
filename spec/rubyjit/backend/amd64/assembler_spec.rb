@@ -125,4 +125,13 @@ describe RubyJIT::Backend::AMD64::Assembler do
 
   end
 
+  describe '#nop' do
+
+    it 'correctly assembles' do
+      @assembler.nop
+      expect(@assembler.bytes).to eql [0x90]
+    end
+
+  end
+
 end

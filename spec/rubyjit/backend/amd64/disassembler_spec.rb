@@ -111,6 +111,12 @@ describe RubyJIT::Backend::AMD64::Disassembler do
         expect(@disassembler.next).to eql '0x0000000000000000  ret                  ; 0xc3        '
       end
 
+      it 'nop' do
+        @assembler.nop
+        @disassemble.call
+        expect(@disassembler.next).to eql '0x0000000000000000  nop                  ; 0x90        '
+      end
+
       it 'unknown data' do
         @assembler.send :emit, 0x00
         @disassemble.call

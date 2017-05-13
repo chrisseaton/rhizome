@@ -141,6 +141,10 @@ module RubyJIT
           emit 0x58 | encoding
         end
 
+        def nop
+          emit 0x90
+        end
+
         def ret
           emit 0xc3
         end
