@@ -84,6 +84,16 @@ describe RubyJIT::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0x89, 0x65, 0x0a]
     end
 
+    it 'correctly assembles small value to register' do
+      @assembler.mov RubyJIT::Backend::AMD64::Value.new(14), RubyJIT::Backend::AMD64::RAX
+      expect(@assembler.bytes).to eql [0xb8, 0x0e, 0x00, 0x00, 0x00]
+    end
+
+    it 'correctly assembles big value to register' do
+      @assembler.mov RubyJIT::Backend::AMD64::Value.new(0x1234567812345678), RubyJIT::Backend::AMD64::RAX
+      expect(@assembler.bytes).to eql [0x48, 0xb8, 0x78, 0x56, 0x34, 0x12, 0x78, 0x56, 0x34, 0x12]
+    end
+
     it 'correctly assembles negative offsets' do
       @assembler.mov RubyJIT::Backend::AMD64::RSP, RubyJIT::Backend::AMD64::RBP - 10
       expect(@assembler.bytes).to eql [0x48, 0x89, 0x65, 0xf6]

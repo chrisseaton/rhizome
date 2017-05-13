@@ -56,6 +56,10 @@ module RubyJIT
 
       Address = Struct.new(:base, :offset)
 
+      # An absolute value.
+
+      Value = Struct.new(:value)
+
       # Create constants for all registers available.
 
       REGISTERS = [:RAX, :RCX, :RDX, :RBX, :RSP, :RBP, :RSI, :RDI,
@@ -109,17 +113,27 @@ module RubyJIT
           if source.is_a?(Register) && dest.is_a?(Register)
             raise if source.encoding >= 8
             raise if dest.encoding >= 8
-            emit 0x48, 0x89, 0b11000000 | (source.encoding << 3) | dest.encoding
+            emit REXW, 0x89, 0b11000000 | (source.encoding << 3) | dest.encoding
           elsif source.is_a?(Address) && dest.is_a?(Register)
             raise if source.base.encoding >= 8
             raise if source.offset < -127 || source.offset > 128
             raise if dest.encoding >= 8
-            emit 0x48, 0x8b, 0b01000000 | (dest.encoding << 3) | source.base.encoding, source.offset
+            emit REXW, 0x8b, 0b01000000 | (dest.encoding << 3) | source.base.encoding, source.offset
           elsif source.is_a?(Register) && dest.is_a?(Address)
             raise if source.encoding >= 8
             raise if dest.base.encoding >= 8
             raise if dest.offset < -127 || dest.offset > 128
-            emit 0x48, 0x89, 0b01000000 | (source.encoding << 3) | dest.base.encoding, dest.offset
+            emit REXW, 0x89, 0b01000000 | (source.encoding << 3) | dest.base.encoding, dest.offset
+          elsif source.is_a?(Value) && dest.is_a?(Register)
+            raise if dest.encoding >= 8
+            if source.value >= -2147483648 && source.value <= 2147483647
+              emit 0b10111000 | dest.encoding
+              emit_sint32 source.value
+            else
+              emit REXW
+              emit 0b10111000 | dest.encoding
+              emit_sint64 source.value
+            end
           else
             raise
           end
@@ -129,7 +143,7 @@ module RubyJIT
           if source.is_a?(Register) && dest.is_a?(Register)
             raise if source.encoding >= 8
             raise if dest.encoding >= 8
-            emit 0x48, 0x01, 0b11000000 | (source.encoding << 3) | dest.encoding
+            emit REXW, 0x01, 0b11000000 | (source.encoding << 3) | dest.encoding
           else
             raise
           end
@@ -192,6 +206,10 @@ module RubyJIT
 
         def emit_sint32(value)
           emit *[value].pack('l<').bytes
+        end
+
+        def emit_sint64(value)
+          emit *[value].pack('q<').bytes
         end
 
       end

@@ -40,13 +40,13 @@ describe RubyJIT::Backend::AMD64::Disassembler do
         it 'with low registers' do
           @assembler.push RubyJIT::Backend::AMD64::RBP
           @disassemble.call
-          expect(@disassembler.next).to eql '0x0000000000000000  push %rbp            ; 0x55        '
+          expect(@disassembler.next).to eql '0x0000000000000000  push %rbp                     ; 0x55'
         end
 
         it 'with high registers' do
           @assembler.push RubyJIT::Backend::AMD64::R15
           @disassemble.call
-          expect(@disassembler.next).to eql '0x0000000000000000  push %r15            ; 0x4157      '
+          expect(@disassembler.next).to eql '0x0000000000000000  push %r15                     ; 0x4157'
         end
 
       end
@@ -56,13 +56,13 @@ describe RubyJIT::Backend::AMD64::Disassembler do
         it 'with low registers' do
           @assembler.pop RubyJIT::Backend::AMD64::RBP
           @disassemble.call
-          expect(@disassembler.next).to eql '0x0000000000000000  pop %rbp             ; 0x5d        '
+          expect(@disassembler.next).to eql '0x0000000000000000  pop %rbp                      ; 0x5d'
         end
 
         it 'with high registers' do
           @assembler.pop RubyJIT::Backend::AMD64::R15
           @disassemble.call
-          expect(@disassembler.next).to eql '0x0000000000000000  pop %r15             ; 0x415f      '
+          expect(@disassembler.next).to eql '0x0000000000000000  pop %r15                      ; 0x415f'
         end
 
       end
@@ -72,25 +72,37 @@ describe RubyJIT::Backend::AMD64::Disassembler do
         it 'register to register' do
           @assembler.mov RubyJIT::Backend::AMD64::RSP, RubyJIT::Backend::AMD64::RBP
           @disassemble.call
-          expect(@disassembler.next).to eql '0x0000000000000000  mov %rsp %rbp        ; 0x4889e5    '
+          expect(@disassembler.next).to eql '0x0000000000000000  mov %rsp %rbp                 ; 0x4889e5'
         end
 
         it 'address to register' do
           @assembler.mov RubyJIT::Backend::AMD64::RSP + 10, RubyJIT::Backend::AMD64::RBP
           @disassemble.call
-          expect(@disassembler.next).to eql '0x0000000000000000  mov %rsp+10 %rbp     ; 0x488b6c0a  '
+          expect(@disassembler.next).to eql '0x0000000000000000  mov %rsp+0xa %rbp             ; 0x488b6c0a'
         end
 
         it 'register to address' do
           @assembler.mov RubyJIT::Backend::AMD64::RSP, RubyJIT::Backend::AMD64::RBP + 10
           @disassemble.call
-          expect(@disassembler.next).to eql '0x0000000000000000  mov %rsp %rbp+10     ; 0x4889650a  '
+          expect(@disassembler.next).to eql '0x0000000000000000  mov %rsp %rbp+0xa             ; 0x4889650a'
+        end
+
+        it 'small value to register' do
+          @assembler.mov RubyJIT::Backend::AMD64::Value.new(14), RubyJIT::Backend::AMD64::RAX
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  mov 0xe %rax                  ; 0xb80e000000'
+        end
+
+        it 'big value to register' do
+          @assembler.mov RubyJIT::Backend::AMD64::Value.new(0x1234567812345678), RubyJIT::Backend::AMD64::RAX
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  mov 0x1234567812345678 %rax   ; 0x48b87856341278563412'
         end
 
         it 'with negative offsets' do
           @assembler.mov RubyJIT::Backend::AMD64::RSP, RubyJIT::Backend::AMD64::RBP - 10
           @disassemble.call
-          expect(@disassembler.next).to eql '0x0000000000000000  mov %rsp %rbp-10     ; 0x488965f6  '
+          expect(@disassembler.next).to eql '0x0000000000000000  mov %rsp %rbp-0xa             ; 0x488965f6'
         end
 
       end
@@ -100,7 +112,7 @@ describe RubyJIT::Backend::AMD64::Disassembler do
         it 'register to register' do
           @assembler.add RubyJIT::Backend::AMD64::RSP, RubyJIT::Backend::AMD64::RBP
           @disassemble.call
-          expect(@disassembler.next).to eql '0x0000000000000000  add %rsp %rbp        ; 0x4801e5    '
+          expect(@disassembler.next).to eql '0x0000000000000000  add %rsp %rbp                 ; 0x4801e5'
         end
 
       end
@@ -109,7 +121,7 @@ describe RubyJIT::Backend::AMD64::Disassembler do
         head = @assembler.label
         @assembler.jmp head
         @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  jmp -5               ; 0xe9fbffffff'
+        expect(@disassembler.next).to eql '0x0000000000000000  jmp -5                        ; 0xe9fbffffff'
       end
 
       it 'jmp with a backward jump over another instruction' do
@@ -117,15 +129,15 @@ describe RubyJIT::Backend::AMD64::Disassembler do
         @assembler.nop
         @assembler.jmp head
         @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  nop                  ; 0x90        '
-        expect(@disassembler.next).to eql '0x0000000000000001  jmp -6               ; 0xe9faffffff'
+        expect(@disassembler.next).to eql '0x0000000000000000  nop                           ; 0x90'
+        expect(@disassembler.next).to eql '0x0000000000000001  jmp -6                        ; 0xe9faffffff'
       end
 
       it 'jmp with a forward jump' do
         head = @assembler.jmp
         @assembler.label head
         @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  jmp 0                ; 0xe900000000'
+        expect(@disassembler.next).to eql '0x0000000000000000  jmp 0                         ; 0xe900000000'
       end
 
       it 'jmp with a forward jump over another instruction' do
@@ -133,25 +145,25 @@ describe RubyJIT::Backend::AMD64::Disassembler do
         @assembler.nop
         @assembler.label head
         @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  jmp 1                ; 0xe901000000'
+        expect(@disassembler.next).to eql '0x0000000000000000  jmp 1                         ; 0xe901000000'
       end
 
       it 'ret' do
         @assembler.ret
         @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  ret                  ; 0xc3        '
+        expect(@disassembler.next).to eql '0x0000000000000000  ret                           ; 0xc3'
       end
 
       it 'nop' do
         @assembler.nop
         @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  nop                  ; 0x90        '
+        expect(@disassembler.next).to eql '0x0000000000000000  nop                           ; 0x90'
       end
 
       it 'unknown data' do
         @assembler.send :emit, 0x00
         @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  data 0x00            ; 0x00        '
+        expect(@disassembler.next).to eql '0x0000000000000000  data 0x00                     ; 0x00'
       end
 
     end
