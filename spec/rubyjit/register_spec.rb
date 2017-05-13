@@ -41,15 +41,26 @@ describe RubyJIT::RegisterAllocator do
     @scheduler = RubyJIT::Scheduler.new
     @scheduler.schedule @graph
     @registers = RubyJIT::RegisterAllocator.new
-    @registers.allocate_infinite @graph
   end
 
   describe '#allocate_infinite' do
+    
+    before :each do
+      @registers.allocate_infinite @graph
+    end
 
     it 'gives each node that produces a value a register annotation' do
       @graph.all_nodes.each do |node|
         if node.produces_value?
           expect(node.props.has_key?(:register)).to be_truthy
+        end
+      end
+    end
+
+    it 'only allocates registers' do
+      @graph.all_nodes.each do |node|
+        if node.produces_value?
+          expect(node.props[:register].to_s).to start_with('r')
         end
       end
     end
@@ -80,6 +91,61 @@ describe RubyJIT::RegisterAllocator do
           registers = inputs.map { |i| i.props[:register] }
           registers.each do |r|
             expect(r).to eql registers.first
+          end
+        end
+      end
+    end
+
+  end
+
+  describe '#allocate_infinite_stack' do
+    
+    before :each do
+      @registers.allocate_infinite_stack @graph
+    end
+
+    it 'gives each node that produces a value a register annotation' do
+      @graph.all_nodes.each do |node|
+        if node.produces_value?
+          expect(node.props.has_key?(:register)).to be_truthy
+        end
+      end
+    end
+
+    it 'only allocates stack slots' do
+      @graph.all_nodes.each do |node|
+        if node.produces_value?
+          expect(node.props[:register].to_s).to start_with('s')
+        end
+      end
+    end
+
+    it 'does not give nodes that do not produce a value a register annotation' do
+      @graph.all_nodes.each do |node|
+        unless node.produces_value?
+          expect(node.props.has_key?(:register)).to be_falsey
+        end
+      end
+    end
+
+    it 'only uses each stack slot once' do
+      slots = Set.new
+      @graph.all_nodes.each do |node|
+        if node.produces_value? && node.op != :move
+          s = node.props[:register]
+          expect(slots.include?(s)).to be_falsey
+          slots.add s
+        end
+      end
+    end
+
+    it 'has all inputs to a phi node already having the same stack slot' do
+      @graph.all_nodes.each do |node|
+        if node.op == :phi
+          inputs = node.inputs.edges.select { |e| e.value? }.map { |e| e.from }
+          slots = inputs.map { |i| i.props[:register] }
+          slots.each do |s|
+            expect(s).to eql slots.first
           end
         end
       end

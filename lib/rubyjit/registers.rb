@@ -49,6 +49,26 @@ module RubyJIT
       add_phi_moves graph
     end
 
+    # The infinite stack allocator is similar to #allocate_infinite, but it
+    # always uses stack slots, so code using this can actually be compiled.
+
+    def allocate_infinite_stack(graph, word_bytes=RubyJIT::Config::WORD_BYTES)
+      # Assign each node a unique stack slot
+
+      s = 0
+      graph.all_nodes.each do |node|
+        if node.produces_value?
+          node.props[:register] = :"s#{s}"
+          s += word_bytes
+        end
+      end
+
+      # We're going to need to move all inputs to a phi into the phi node's
+      # stack slot
+
+      add_phi_moves graph
+    end
+
     # After we've allocated registers, however we've done it, we may not have
     # been able to get all inputs to a phi node to use the same register as
     # the phi node itself has (remembering that the input to a phi might be a

@@ -45,6 +45,14 @@ graph needs to be register allocated in order to test or demonstrate some later
 phase of the compiler, but you aren't actually going to generate machine code so
 you don't care about how many registers a real processor has.
 
+#### The infinite stack allocator
+
+The infinite register allocator is simple, but you can't actually compile code
+that wants to use more registers than your processor has. When we want to
+actually compile test code, but still want to keep things as simple as possible
+we have a register allocator that always uses stack slots. It doesn't attempt to
+re-use any stack slots, and never uses any registers.
+
 #### Phi nodes
 
 The phi nodes that we created when building the graph to say that a value was
