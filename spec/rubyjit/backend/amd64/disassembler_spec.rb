@@ -129,6 +129,12 @@ describe RubyJIT::Backend::AMD64::Disassembler do
         expect(@disassembler.next).to eql '0x0000000000000000  shl %cl %rax                  ; 0x48d3e0'
       end
 
+      it 'cmp' do
+        @assembler.cmp RubyJIT::Backend::AMD64::RAX, RubyJIT::Backend::AMD64::RCX
+        @disassemble.call
+        expect(@disassembler.next).to eql '0x0000000000000000  cmp %rax %rcx                 ; 0x4839c1'
+      end
+
       it 'jmp with a backward jump' do
         head = @assembler.label
         @assembler.jmp head

@@ -174,6 +174,16 @@ module RubyJIT
           emit prefix if prefix
           emit 0x58 | encoding
         end
+
+        def cmp(a, b)
+          if a.is_a?(Register) && b.is_a?(Register)
+            raise if a.encoding >= 8
+            raise if b.encoding >= 8
+            emit REXW, 0x39, 0b11000000 | (a.encoding << 3) | b.encoding
+          else
+            raise
+          end
+        end
         
         def jmp(label=nil)
           jcc(nil, label)

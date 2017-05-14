@@ -156,6 +156,23 @@ describe RubyJIT::Backend::AMD64::Assembler do
 
   end
 
+  describe '#cmp' do
+
+    it 'correctly assembles' do
+      @assembler.cmp RubyJIT::Backend::AMD64::RAX, RubyJIT::Backend::AMD64::RCX
+      expect(@assembler.bytes).to eql [0x48, 0x39, 0xc1]
+    end
+
+    it 'handles all low registers' do
+      RubyJIT::Backend::AMD64::LOW_REGISTERS.each do |r1|
+        RubyJIT::Backend::AMD64::LOW_REGISTERS.each do |r2|
+          @assembler.cmp r1, r2
+        end
+      end
+    end
+
+  end
+
   describe '#jmp' do
 
     it 'correctly assembles a backward jump' do
