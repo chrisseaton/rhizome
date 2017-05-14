@@ -159,6 +159,16 @@ module RubyJIT
           end
         end
 
+        def and(source, dest)
+          if source.is_a?(Register) && dest.is_a?(Register)
+            raise if source.encoding >= 8
+            raise if dest.encoding >= 8
+            emit REXW, 0x21, 0b11000000 | (source.encoding << 3) | dest.encoding
+          else
+            raise
+          end
+        end
+
         def shr(shift, register)
           raise unless shift == RCX
           emit REXW, 0xd3, 0xe8 | register.encoding

@@ -117,6 +117,16 @@ describe RubyJIT::Backend::AMD64::Disassembler do
 
       end
 
+      describe 'and' do
+
+        it 'register to register' do
+          @assembler.and RubyJIT::Backend::AMD64::RSP, RubyJIT::Backend::AMD64::RBP
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  and %rsp %rbp                 ; 0x4821e5'
+        end
+
+      end
+
       it 'shr' do
         @assembler.shr RubyJIT::Backend::AMD64::RCX, RubyJIT::Backend::AMD64::RAX
         @disassemble.call

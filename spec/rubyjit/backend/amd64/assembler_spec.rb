@@ -126,6 +126,23 @@ describe RubyJIT::Backend::AMD64::Assembler do
 
   end
 
+  describe '#and' do
+
+    it 'correctly assembles' do
+      @assembler.and RubyJIT::Backend::AMD64::RSP, RubyJIT::Backend::AMD64::RBP
+      expect(@assembler.bytes).to eql [0x48, 0x21, 0xe5]
+    end
+
+    it 'handles all low registers' do
+      RubyJIT::Backend::AMD64::LOW_REGISTERS.each do |r1|
+        RubyJIT::Backend::AMD64::LOW_REGISTERS.each do |r2|
+          @assembler.and r1, r2
+        end
+      end
+    end
+
+  end
+
   describe '#shr' do
 
     it 'correctly assembles' do

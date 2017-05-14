@@ -82,6 +82,10 @@ module RubyJIT
             raise unless prefix == REXW
             byte = shift
             insn = "add #{register((byte >> 3) & 0x7)} #{register(byte & 0x7)}"
+          elsif byte == 0x21
+            raise unless prefix == REXW
+            byte = shift
+            insn = "and #{register((byte >> 3) & 0x7)} #{register(byte & 0x7)}"
           elsif byte == 0x39
             raise unless prefix == REXW
             byte = shift
