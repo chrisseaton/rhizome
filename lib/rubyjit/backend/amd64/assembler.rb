@@ -159,6 +159,16 @@ module RubyJIT
           end
         end
 
+        def shr(shift, register)
+          raise unless shift == RCX
+          emit REXW, 0xd3, 0xe8 | register.encoding
+        end
+
+        def shl(shift, register)
+          raise unless shift == RCX
+          emit REXW, 0xd3, 0xe0 | register.encoding
+        end
+
         def pop(dest)
           prefix, encoding = dest.prefix_and_encoding
           emit prefix if prefix

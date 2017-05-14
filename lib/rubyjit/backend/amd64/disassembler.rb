@@ -64,14 +64,15 @@ module RubyJIT
             insn = "jmp #{shift_sint32}"
           elsif byte == 0x0f
             name = case shift & ~0x80
-              when EQUAL;         'e'
-              when NOT_EQUAL;     'ne'
-              when LESS;          'lt'
-              when LESS_EQUALS;   'le'
-              when GREATER;       'gt'
-              when GREATER_EQUAL; 'ge'
-              when OVERFLOW;       'o'
-            end
+                     when EQUAL;         'e'
+                     when NOT_EQUAL;     'ne'
+                     when LESS;          'lt'
+                     when LESS_EQUALS;   'le'
+                     when GREATER;       'gt'
+                     when GREATER_EQUAL; 'ge'
+                     when OVERFLOW;       'o'
+                     else;                raise
+                   end
             insn = "j#{name} #{shift_sint32}"
           elsif byte & 0xf8 == 0x50
             insn = "push #{register(prefix, byte & 0x7)}"
@@ -81,6 +82,15 @@ module RubyJIT
             raise unless prefix == REXW
             byte = shift
             insn = "add #{register((byte >> 3) & 0x7)} #{register(byte & 0x7)}"
+          elsif byte == 0xd3
+            raise unless prefix == REXW
+            byte = shift
+            name = case byte & 0xe8
+                     when 0xe8;   'r'
+                     when 0xe0;   'l'
+                     else;        raise
+                   end
+            insn = "sh#{name} %cl #{register(prefix, byte & 0x7)}"
           elsif [0x89, 0x8b].include?(byte)
             raise unless prefix == REXW
             next_byte = shift

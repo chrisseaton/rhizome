@@ -126,6 +126,36 @@ describe RubyJIT::Backend::AMD64::Assembler do
 
   end
 
+  describe '#shr' do
+
+    it 'correctly assembles' do
+      @assembler.shr RubyJIT::Backend::AMD64::RCX, RubyJIT::Backend::AMD64::RAX
+      expect(@assembler.bytes).to eql [0x48, 0xd3, 0xe8]
+    end
+
+    it 'handles all low registers' do
+      RubyJIT::Backend::AMD64::LOW_REGISTERS.each do |r|
+        @assembler.shr RubyJIT::Backend::AMD64::RCX, r
+      end
+    end
+
+  end
+
+  describe '#shl' do
+
+    it 'correctly assembles' do
+      @assembler.shl RubyJIT::Backend::AMD64::RCX, RubyJIT::Backend::AMD64::RAX
+      expect(@assembler.bytes).to eql [0x48, 0xd3, 0xe0]
+    end
+
+    it 'handles all low registers' do
+      RubyJIT::Backend::AMD64::LOW_REGISTERS.each do |r|
+        @assembler.shl RubyJIT::Backend::AMD64::RCX, r
+      end
+    end
+
+  end
+
   describe '#jmp' do
 
     it 'correctly assembles a backward jump' do
