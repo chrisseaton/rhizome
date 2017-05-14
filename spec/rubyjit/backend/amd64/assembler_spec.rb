@@ -156,6 +156,26 @@ describe RubyJIT::Backend::AMD64::Assembler do
 
   end
 
+  describe '#je' do
+
+    it 'correctly assembles a backward jump' do
+      head = @assembler.label
+      @assembler.je head
+      expect(@assembler.bytes).to eql [0x0f, 0x84, 0xfa, 0xff, 0xff, 0xff]
+    end
+
+  end
+
+  describe '#jne' do
+
+    it 'correctly assembles a backward jump' do
+      head = @assembler.label
+      @assembler.jne head
+      expect(@assembler.bytes).to eql [0x0f, 0x85, 0xfa, 0xff, 0xff, 0xff]
+    end
+
+  end
+
   describe '#ret' do
 
     it 'correctly assembles' do

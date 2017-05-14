@@ -11,7 +11,7 @@
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVencodingED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
 # NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
@@ -88,6 +88,16 @@ module RubyJIT
         const_set name, 0x40 + encoding
       end
 
+      # Condition flags.
+
+      EQUAL         = 0x4
+      NOT_EQUAL     = 0x5
+      LESS          = 0xc
+      LESS_EQUALS   = 0xe
+      GREATER       = 0xf
+      GREATER_EQUAL = 0xd
+      OVERFLOW      = 0x0
+
       # An assembler emits machine code bytes for given assembly instructions.
 
       class Assembler
@@ -156,8 +166,28 @@ module RubyJIT
         end
         
         def jmp(label=nil)
+          jcc(nil, label)
+        end
+
+        def je(label=nil)
+          jcc(EQUAL, label)
+        end
+
+        def jne(label=nil)
+          jcc(NOT_EQUAL, label)
+        end
+
+        def jcc(condition, label)
           label = General::Label.new(self) unless label
-          emit 0xe9
+
+          if condition
+            emit 0x0f
+            emit 0x80 | condition
+            prefix = 2
+          else
+            emit 0xe9
+            prefix = 1
+          end
 
           # Does this label already have a location?
 
@@ -167,12 +197,13 @@ module RubyJIT
           else
             # If it doesn't, remember that we want to patch this location in the
             # future and emit 0s for now.
-            label.patch_point -5
+            label.patch_point -(4 + prefix)
             emit 0x00
             emit 0x00
             emit 0x00
             emit 0x00
           end
+
           label
         end
         

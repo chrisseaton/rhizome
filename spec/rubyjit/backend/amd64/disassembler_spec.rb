@@ -148,6 +148,20 @@ describe RubyJIT::Backend::AMD64::Disassembler do
         expect(@disassembler.next).to eql '0x0000000000000000  jmp 1                         ; 0xe901000000'
       end
 
+      it 'je with a backward jump' do
+        head = @assembler.label
+        @assembler.je head
+        @disassemble.call
+        expect(@disassembler.next).to eql '0x0000000000000000  je -6                         ; 0x0f84faffffff'
+      end
+
+      it 'jne with a backward jump' do
+        head = @assembler.label
+        @assembler.jne head
+        @disassemble.call
+        expect(@disassembler.next).to eql '0x0000000000000000  jne -6                        ; 0x0f85faffffff'
+      end
+
       it 'ret' do
         @assembler.ret
         @disassemble.call

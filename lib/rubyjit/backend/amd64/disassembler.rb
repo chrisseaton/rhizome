@@ -62,6 +62,17 @@ module RubyJIT
             insn = 'nop'
           elsif byte == 0xe9
             insn = "jmp #{shift_sint32}"
+          elsif byte == 0x0f
+            name = case shift & ~0x80
+              when EQUAL;         'e'
+              when NOT_EQUAL;     'ne'
+              when LESS;          'lt'
+              when LESS_EQUALS;   'le'
+              when GREATER;       'gt'
+              when GREATER_EQUAL; 'ge'
+              when OVERFLOW;       'o'
+            end
+            insn = "j#{name} #{shift_sint32}"
           elsif byte & 0xf8 == 0x50
             insn = "push #{register(prefix, byte & 0x7)}"
           elsif byte & 0xf8 == 0x58
