@@ -81,6 +81,8 @@ module RubyJIT
       end
       
     end
+
+    attr_reader :address
     
     def initialize(size, address=nil)
       raise RangeError if size < 0

@@ -40,7 +40,7 @@ module RubyJIT
           @start = @pos
           text = read
           address = '0x' + @start.to_s(16).rjust(16, '0')
-          bytes = '0x' + @bytes[@start...@pos].map { |b| b.to_s(16).rjust(2, '0') }.join
+          bytes = @bytes[@start...@pos].map { |b| b.to_s(16).rjust(2, '0') }.join(' ')
           address + '  ' + text.ljust(29) + ' ; ' + bytes
         end
 
@@ -58,10 +58,17 @@ module RubyJIT
 
           if byte == 0xc3
             insn = 'ret'
+          elsif byte == 0xff
+            target = shift
+            if target & 0xd0 == 0xd0
+              insn = "call *#{register(prefix, target & ~0xd0)}"
+            end
           elsif byte == 0x90
             insn = 'nop'
           elsif byte == 0xe9
-            insn = "jmp #{shift_sint32}"
+            offset = shift_sint32
+            target = @start + 5 + offset
+            insn = "jmp #{offset} (0x#{target.to_s(16).rjust(16, '0')})"
           elsif byte == 0x0f
             name = case shift & ~0x80
                      when EQUAL;         'e'
@@ -70,10 +77,12 @@ module RubyJIT
                      when LESS_EQUALS;   'le'
                      when GREATER;       'gt'
                      when GREATER_EQUAL; 'ge'
-                     when OVERFLOW;       'o'
+                     when OVERFLOW;      'o'
                      else;                raise
                    end
-            insn = "j#{name} #{shift_sint32}"
+            offset = shift_sint32
+            target = @start + 6 + offset
+            insn = "j#{name} #{offset} (0x#{target.to_s(16).rjust(16, '0')})"
           elsif byte & 0xf8 == 0x50
             insn = "push #{register(prefix, byte & 0x7)}"
           elsif byte & 0xf8 == 0x58
@@ -82,6 +91,10 @@ module RubyJIT
             raise unless prefix == REXW
             byte = shift
             insn = "add #{register((byte >> 3) & 0x7)} #{register(byte & 0x7)}"
+          elsif byte == 0x29
+            raise unless prefix == REXW
+            byte = shift
+            insn = "sub #{register((byte >> 3) & 0x7)} #{register(byte & 0x7)}"
           elsif byte == 0x21
             raise unless prefix == REXW
             byte = shift
@@ -107,11 +120,11 @@ module RubyJIT
             if (next_byte & 0b11000000) == 0b01000000
               offset = shift
               offset -= 256 if (offset & 0x80) == 0x80
-              if offset.positive?
-                r2 += '+'
-              else
+              if offset.negative?
                 r2 += '-'
                 offset = -offset
+              else
+                r2 += '+'
               end
               r2 += '0x'
               r2 += offset.to_s(16)
@@ -122,14 +135,19 @@ module RubyJIT
               dest, source = r1, r2
             end
             insn = "mov #{source} #{dest}"
-          elsif byte == 0xb8
+          elsif byte & 0xf8 == 0xb8
             dest = register(byte & 0x7)
             if prefix == REXW
               value = shift_sint64
             else
               value = shift_sint32
             end
-            insn = "mov 0x#{value.to_s(16)} #{dest}"
+            if value.negative?
+              value = "-0x#{-value.to_s(16)}"
+            else
+              value = "0x#{value.to_s(16)}"
+            end
+            insn = "mov #{value} #{dest}"
           end
 
           insn = "data 0x#{byte.to_s(16).rjust(2, '0')}" unless insn

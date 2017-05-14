@@ -25,7 +25,7 @@ module RubyJIT
   
   class Handles
   
-    def initialize(word_bits)
+    def initialize(word_bits=RubyJIT::Config::WORD_BITS)
       @min = -2**word_bits
       @max = 2**word_bits - 1
       @from_native = {} unless Config::MRI

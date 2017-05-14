@@ -52,10 +52,10 @@ module RubyJIT
     # The infinite stack allocator is similar to #allocate_infinite, but it
     # always uses stack slots, so code using this can actually be compiled.
 
-    def allocate_infinite_stack(graph, word_bytes=RubyJIT::Config::WORD_BYTES)
+    def allocate_infinite_stack(graph, word_bytes=RubyJIT::Config::WORD_BYTES, first_stack_slot=RubyJIT::Config::FIRST_STACK_SLOT)
       # Assign each node a unique stack slot
 
-      s = 0
+      s = first_stack_slot
       graph.all_nodes.each do |node|
         if node.produces_value?
           node.props[:register] = :"s#{s}"

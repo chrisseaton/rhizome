@@ -152,7 +152,7 @@ which you may think would be very simple, such as `mov` actually has 34
 different ways of being encoded for different types of operands. There is a
 specified way to encode all of these, but it is far from simple.
 
-In RubyJIT we have implemented a small subset of AM64 instruction encoding to
+In RubyJIT we have implemented a small subset of AMD64 instruction encoding to
 keep the code simple, but this means that the number of instructions available
 to use is limited. For example, it is normally possible to add a value in a
 register to a value loaded from memory and store the result back to memory in
@@ -161,7 +161,7 @@ load in one instruction, do an add that only uses registers because that's
 easier to encode, and then store in another instruction.
 
 This means we generate less efficient code, but for the examples we have it
-isn't very important.
+isn't very important. Some machines with simpler architectures, such as RISC machines or load-store architectures, are always programmed like this.
 
 ### Potential projects
 

@@ -23,7 +23,7 @@
 
 require_relative '../lib/rubyjit'
 
-handles = RubyJIT::Handles.new(RubyJIT::Config::WORD_BITS)
+handles = RubyJIT::Handles.new
 
 puts 'fixnums always have the lowest bit set'
 

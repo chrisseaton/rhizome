@@ -19,12 +19,12 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# Illustrates building inline caches for method calls in the graph.
+# Illustrates code generation.
 
 require_relative '../lib/rubyjit'
 require_relative '../spec/rubyjit/fixtures'
 
-puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+raise 'this experiment only works on AMD64' unless RubyJIT::Config::AMD64
 
 interpreter = RubyJIT::Interpreter.new
 profile = RubyJIT::Profile.new
@@ -40,23 +40,66 @@ graph = builder.graph
 passes_runner = RubyJIT::Passes::Runner.new(
     RubyJIT::Passes::PostBuild.new,
     RubyJIT::Passes::DeadCode.new,
-    RubyJIT::Passes::NoChoicePhis.new
+    RubyJIT::Passes::NoChoicePhis.new,
+    RubyJIT::Passes::InlineCaching.new,
+    RubyJIT::Passes::Inlining.new,
+    RubyJIT::Passes::Deoptimise.new
 )
 
 passes_runner.run graph
-
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
-  viz.visualise 'before.pdf'
-end
 
 passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Passes::InlineCaching.new
+    RubyJIT::Backend::General::AddTagging.new,
+    RubyJIT::Backend::General::ExpandTagging.new,
+    RubyJIT::Backend::General::SpecialiseBranches.new,
+    RubyJIT::Backend::General::ExpandCalls.new
 )
 
 passes_runner.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
-  viz.visualise 'after.pdf'
+scheduler = RubyJIT::Scheduler.new
+scheduler.schedule graph
+
+register_allocator = RubyJIT::RegisterAllocator.new
+register_allocator.allocate_infinite_stack graph
+
+blocks = scheduler.linearize(graph)
+
+blocks.each_with_index do |block, n|
+  puts "block#{n}:" unless n == 0
+
+  block.each do |insn|
+    puts "  #{insn.map(&:to_s).join(' ')}"
+  end
 end
+
+puts
+
+assembler = RubyJIT::Backend::AMD64::Assembler.new
+handles = RubyJIT::Handles.new
+interface = RubyJIT::Interface.new(handles)
+
+codegen = RubyJIT::Backend::AMD64::Codegen.new(assembler, handles, interface)
+codegen.generate blocks
+
+machine_code = assembler.bytes
+
+disassembler = RubyJIT::Backend::AMD64::Disassembler.new(machine_code)
+
+while disassembler.more?
+  puts disassembler.next
+end
+
+memory = RubyJIT::Memory.new(machine_code.size)
+memory.write 0, machine_code
+memory.executable = true
+native_method = memory.to_proc([:long, :long], :long)
+
+puts
+puts 'Using the fast path:'
+puts
+puts '14 + 2 = ' + interface.call_native(native_method, 14, 2).to_s
+puts
+puts 'Using the slow path:'
+puts
+puts '14.2 + 2.1 = ' + interface.call_native(native_method, 14.2, 2.1).to_s

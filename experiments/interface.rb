@@ -42,7 +42,7 @@ if RubyJIT::Config::AMD64
                             # mov ... rax   rax = the method name handle
     0x50,                   # push rax      push the method name handle
     0x57,                   # push rdi      push the receiver
-    0x48, 0x89, 0xe7,       # mov rdi rsp   rdi = the address of last value we pushed
+    0x48, 0x89, 0xe7,       # mov rsp rdi   rdi = the address of last value we pushed
     0x48, 0xc7, 0xc6, *[1].pack('L<').bytes,
                             # mov 1 rsi     rsi = the number of arguments
     0x48, 0xb8, *[c].pack('Q<').bytes,

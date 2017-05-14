@@ -45,8 +45,8 @@ module RubyJIT
         # Patch this offset in the compiled code when the label does get a
         # location in the future.
         
-        def patch_point(offset)
-          @patch_points.push [@assembler.location, offset]
+        def patch_point(source)
+          @patch_points.push [@assembler.location, source]
         end
 
         # Give the label the location at this point in the assembled code.
@@ -54,8 +54,8 @@ module RubyJIT
         def mark
           @location = @assembler.location
 
-          @patch_points.each do |patch, offset|
-            @assembler.patch patch, location + offset
+          @patch_points.each do |patch_location, source|
+            @assembler.patch patch_location, location - source
           end
         end
         

@@ -34,6 +34,7 @@ module RubyJIT
     WORD_BYTES = 8
     WORD_BITS = WORD_BYTES * BYTE_BITS
     ENDIANESS = :little
+    FIRST_STACK_SLOT = 8
     
     # In some cases macOS does things differently to Linux. Again, use RbConfig
     # to work out what operating system we are running on.

@@ -59,6 +59,10 @@ module RubyJIT
       # An absolute value.
 
       Value = Struct.new(:value)
+      
+      # Indirection of something else.
+      
+      Indirection = Struct.new(:base)
 
       # Create constants for all registers available.
 
@@ -126,14 +130,20 @@ module RubyJIT
             emit REXW, 0x89, 0b11000000 | (source.encoding << 3) | dest.encoding
           elsif source.is_a?(Address) && dest.is_a?(Register)
             raise if source.base.encoding >= 8
-            raise if source.offset < -127 || source.offset > 128
             raise if dest.encoding >= 8
-            emit REXW, 0x8b, 0b01000000 | (dest.encoding << 3) | source.base.encoding, source.offset
+            if source.offset >= -127 || source.offset <= 128
+              emit REXW, 0x8b, 0b01000000 | (dest.encoding << 3) | source.base.encoding, source.offset
+            else
+              raise
+            end
           elsif source.is_a?(Register) && dest.is_a?(Address)
             raise if source.encoding >= 8
             raise if dest.base.encoding >= 8
-            raise if dest.offset < -127 || dest.offset > 128
-            emit REXW, 0x89, 0b01000000 | (source.encoding << 3) | dest.base.encoding, dest.offset
+            if dest.offset >= -127 || dest.offset <= 128
+              emit REXW, 0x89, 0b01000000 | (source.encoding << 3) | dest.base.encoding, dest.offset
+            else
+              raise
+            end
           elsif source.is_a?(Value) && dest.is_a?(Register)
             raise if dest.encoding >= 8
             if source.value >= -2147483648 && source.value <= 2147483647
@@ -154,6 +164,16 @@ module RubyJIT
             raise if source.encoding >= 8
             raise if dest.encoding >= 8
             emit REXW, 0x01, 0b11000000 | (source.encoding << 3) | dest.encoding
+          else
+            raise
+          end
+        end
+
+        def sub(source, dest)
+          if source.is_a?(Register) && dest.is_a?(Register)
+            raise if source.encoding >= 8
+            raise if dest.encoding >= 8
+            emit REXW, 0x29, 0b11000000 | (source.encoding << 3) | dest.encoding
           else
             raise
           end
@@ -213,10 +233,8 @@ module RubyJIT
           if condition
             emit 0x0f
             emit 0x80 | condition
-            prefix = 2
           else
             emit 0xe9
-            prefix = 1
           end
 
           # Does this label already have a location?
@@ -227,7 +245,7 @@ module RubyJIT
           else
             # If it doesn't, remember that we want to patch this location in the
             # future and emit 0s for now.
-            label.patch_point -(4 + prefix)
+            label.patch_point location + 4
             emit 0x00
             emit 0x00
             emit 0x00
@@ -246,6 +264,19 @@ module RubyJIT
         def nop
           emit 0x90
         end
+        
+        def call(dest)
+          if dest.is_a?(Indirection)
+            if dest.base.is_a?(Register)
+              emit 0xff
+              emit 0xd0 | dest.base.encoding
+            else
+              raise
+            end
+          else
+            raise
+          end
+        end
 
         def ret
           emit 0xc3
@@ -262,7 +293,9 @@ module RubyJIT
         private
 
         def emit(*values)
-          bytes.push *(values.map { |b| b & 0xff })
+          values.each do |v|
+            bytes.push v & 0xff
+          end
         end
 
         def emit_sint32(value)
