@@ -43,7 +43,7 @@ passes_runner = RubyJIT::Passes::Runner.new(
     RubyJIT::Passes::NoChoicePhis.new,
     RubyJIT::Passes::InlineCaching.new,
     RubyJIT::Passes::Inlining.new,
-    RubyJIT::Passes::Deoptimise.new
+    RubyJIT::Passes::InsertSafepoints.new
 )
 
 passes_runner.run graph
