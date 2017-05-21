@@ -38,14 +38,7 @@ describe RubyJIT::Interface do
         0x48, 0x89, 0xe7,       # mov rdi rsp   rdi = the address of last value we pushed
         0x48, 0xc7, 0xc6, 0x01, 0x00, 0x00, 0x00,
                                 # mov 1 rsi     rsi = the number of arguments
-        0x48, 0xb8, (@c >>  0) & 0xff,
-                    (@c >>  8) & 0xff,
-                    (@c >> 16) & 0xff,
-                    (@c >> 24) & 0xff,
-                    (@c >> 32) & 0xff,
-                    (@c >> 40) & 0xff,
-                    (@c >> 48) & 0xff,
-                    (@c >> 56) & 0xff,
+        0x48, 0xb8, *[@c].pack('Q<').bytes,
                                 # mov ... rax   rax = the address of the call to managed
         0xff, 0xd0,             # call *rax     call to managed
         0x5b,                   # pop rbx       pop the receiver
