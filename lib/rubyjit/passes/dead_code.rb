@@ -39,7 +39,7 @@ module RubyJIT
 
           if n.outputs.empty? && n.op != :finish
             n.remove
-            modified |= true
+            modified = true
           end
         end
 

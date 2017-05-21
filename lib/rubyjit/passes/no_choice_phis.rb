@@ -39,7 +39,7 @@ module RubyJIT
             # unique inputs. It's two because one is the switch value
             # from the merge node, and the other is the actual value.
 
-            if n.inputs.from_nodes.uniq.size == 2
+            if n.inputs.from_nodes.uniq.size <= 2
               # We've got just one input then.
 
               input = n.inputs.edges.find { |i| i.from.op != :merge }
@@ -61,7 +61,7 @@ module RubyJIT
               # Remove the phi node from the graph.
 
               n.remove
-              modified |= true
+              modified = true
             end
           end
         end

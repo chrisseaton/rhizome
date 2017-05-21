@@ -55,7 +55,7 @@ module RubyJIT
             # Then remove the node from the graph.
 
             n.remove
-            modified |= true
+            modified = true
           end
         end
 
