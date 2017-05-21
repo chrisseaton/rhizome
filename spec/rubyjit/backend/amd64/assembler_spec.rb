@@ -284,4 +284,13 @@ describe RubyJIT::Backend::AMD64::Assembler do
 
   end
 
+  describe '#int' do
+
+    it 'correctly assembles' do
+      @assembler.int 3
+      expect(@assembler.bytes).to eql [0xcc]
+    end
+
+  end
+
 end

@@ -264,6 +264,11 @@ module RubyJIT
         def nop
           emit 0x90
         end
+
+        def int(code)
+          raise unless code == 3
+          emit 0xcc
+        end
         
         def call(dest)
           if dest.is_a?(Indirection)

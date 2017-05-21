@@ -65,6 +65,8 @@ module RubyJIT
             end
           elsif byte == 0x90
             insn = 'nop'
+          elsif byte == 0xcc
+            insn = 'int 3'
           elsif byte == 0xe9
             offset = shift_sint32
             target = @start + 5 + offset
