@@ -98,7 +98,8 @@ objects into handles, and handles into objects as required.
 Calls from Ruby to native are relatively simple - you just pass the function and
 the arguments in and it does the call and returns the return value. The native
 code accepts arguments using the system's calling convention - the rules which
-say where the arguments go in memory or registers.
+say where the arguments go in memory or registers. We treat the receiver (the
+value for `self`) as being the first argument.
 
 For calls from native to Ruby, the `Interface` object gives us a pointer, which
 we then call using a machine code instruction. To make it easier to read the

@@ -93,13 +93,13 @@ end
 memory = RubyJIT::Memory.new(machine_code.size)
 memory.write 0, machine_code
 memory.executable = true
-native_method = memory.to_proc([:long, :long], :long)
+native_method = memory.to_proc([:long, :long, :long], :long)
 
 puts
 puts 'Using the fast path:'
 puts
-puts '14 + 2 = ' + interface.call_native(native_method, 14, 2).to_s
+puts '14 + 2 = ' + interface.call_native(native_method, nil, 14, 2).to_s
 puts
 puts 'Using the slow path:'
 puts
-puts '14.2 + 2.1 = ' + interface.call_native(native_method, 14.2, 2.1).to_s
+puts '14.2 + 2.1 = ' + interface.call_native(native_method, nil, 14.2, 2.1).to_s

@@ -79,13 +79,16 @@ module RubyJIT
 
             block.each do |insn|
               case insn.first
+                when :self
+                  _, dest = insn
+                  @assembler.mov RDI, operand(dest)
                 when :arg
                   _, n, dest = insn
                   case n
                     when 0
-                      source = RDI
-                    when 1
                       source = RSI
+                    when 1
+                      source = RDX
                     else
                       raise n.to_s
                   end
