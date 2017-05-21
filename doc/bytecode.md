@@ -179,7 +179,7 @@ as it does not support `set_trace_func`.
  0  arg       0
  1  store     a
  2  arg       1
- 3  store     :b
+ 3  store     b
  4  trace     27
  5  trace     28
  6  load      a

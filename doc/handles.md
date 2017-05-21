@@ -106,9 +106,9 @@ we then call using a machine code instruction. To make it easier to read the
 arguments when we get back into Ruby, where we can't easily access registers, we
 have devised a new calling convention. The receiver, the method name, and then
 the arguments are pushed onto the stack. The native call back into Ruby which
-`Interface` provides is then called passing the address of the stack, and the
-number of arguments on it. From Ruby, using our memory system, we can read the
-memory off the stack using the address we were given.
+`Interface` provides is then called passing the address of top of the stack, and
+the number of arguments on it. From Ruby, using our memory system, we can read
+the memory off the stack using the address we were given.
 
 #### Interaction with optimisations and deoptimisation
 
