@@ -31,11 +31,19 @@ module RubyJIT
         def run(graph)
           modified = false
           
-          # Replace kind_is?(fixnum) with is_tagged_fixnum?
           
           graph.find_nodes(:kind_is?).each do |kind_is|
-            if kind_is.props[:kind] == :fixnum
+            case kind_is.props[:kind]
+            when :fixnum
+              # Replace kind_is?(fixnum) with is_tagged_fixnum?
               kind_is.replace IR::Node.new(:is_tagged_fixnum?)
+            when Module
+              # This is a hack - replace kind_is?(Module) with just
+              # not(is_tagged_fixnum?).
+              is_tagged = IR::Node.new(:is_tagged_fixnum?)
+              not_is_tagged = IR::Node.new(:not)
+              is_tagged.output_to :value, not_is_tagged
+              kind_is.replace not_is_tagged, not_is_tagged, [is_tagged]
             end
           end
           

@@ -25,6 +25,9 @@ module RubyJIT
 
       # Code generation for AMD64.
 
+      DeoptPoint = Struct.new(:label, :frame_state)
+      FrameStateGen = Struct.new(:insns, :ip, :receiver, :args)
+
       class Codegen
 
         def initialize(assembler, handles, interface)
@@ -52,11 +55,14 @@ module RubyJIT
           end
 
           stack_space = max_slot + 8
+          
+          #stack_space += stack_space % 16
 
           # Standard AMD64 function prelude - preserve the caller's rbp and create our stack space.
 
           @assembler.push RBP
           @assembler.mov RSP, RBP
+
           @assembler.mov Value.new(stack_space), RAX
           @assembler.sub RAX, RSP
 
@@ -67,6 +73,13 @@ module RubyJIT
           blocks.size.times do |n|
             labels[:"block#{n}"] = General::Label.new(@assembler)
           end
+          
+          # Build up an array of deoptimisation points to emit at the end of
+          # the method, when all the fast-path code is out of the way, and
+          # keep track of the current frame state.
+          
+          deopts = []
+          frame_state = nil
 
           # Emit code for each basic block.
 
@@ -134,6 +147,10 @@ module RubyJIT
                   _, value, target, cond = insn
                   @assembler.mov operand(value), RAX
                   case cond
+                    when :int64_zero?
+                      @assembler.mov Value.new(0), RCX
+                      @assembler.cmp RAX, RCX
+                      @assembler.je labels[target]
                     when :int64_not_zero?
                       @assembler.mov Value.new(0), RCX
                       @assembler.cmp RAX, RCX
@@ -149,6 +166,21 @@ module RubyJIT
                       @assembler.mov Value.new(0), RCX
                       @assembler.cmp RAX, RCX
                       @assembler.je labels[target]
+                    else
+                      raise
+                  end
+                when :guard
+                  _, value, cond = insn
+                  @assembler.mov operand(value), RAX
+                  case cond
+                    when :int64_zero?
+                      @assembler.mov Value.new(0), RCX
+                      @assembler.cmp RAX, RCX
+                      deopts.push DeoptPoint.new(@assembler.jne, frame_state)
+                    when :int64_not_zero?
+                      @assembler.mov Value.new(0), RCX
+                      @assembler.cmp RAX, RCX
+                      deopts.push DeoptPoint.new(@assembler.je, frame_state)
                     else
                       raise
                   end
@@ -176,10 +208,27 @@ module RubyJIT
                   @assembler.mov RBP, RSP
                   @assembler.pop RBP
                   @assembler.ret
+                when :frame_state
+                  _, insns, ip, receiver, args = insn
+                  frame_state = FrameStateGen.new(insns, ip, receiver, args)
                 else
                   raise
               end
             end
+          end
+          
+          # Now emit all deoptimisation routines.
+          
+          deopts.each do |deopt|
+            @assembler.label deopt.label
+            @assembler.mov RBP, RDI
+            @assembler.mov RSP, RSI
+            @assembler.mov Value.new(@handles.to_native(deopt.frame_state)), RDX
+            @assembler.mov Value.new(@interface.continue_in_interpreter_address), RAX
+            @assembler.call Indirection.new(RAX)
+            @assembler.mov RBP, RSP
+            @assembler.pop RBP
+            @assembler.ret
           end
         end
 

@@ -77,6 +77,10 @@ module RubyJIT
 
               branch.output_to :true, mono_send, :control
               branch.output_to :false, mega_send, :control
+              
+              # Mark the megamorphic case as uncommon.
+              
+              mega_send.props[:uncommon] = true
 
               # After running one of the calls we then merge the control flow
               # and the return value.

@@ -133,9 +133,13 @@ module RubyJIT
       # the current node, and a node which now produces the value that was
       # previously coming from this node.
 
-      def replace(start, finish=start, users=[start], value=finish, user_input_name=nil)
-        inputs.edges.each do |edge|
-          if edge.control?
+      def replace(*args)
+        Node.replace_multiple self, self, *args
+      end
+
+      def self.replace_multiple(existing_start, existing_finish, start, finish=start, users=[start], value=finish, user_input_name=nil)
+        existing_start.inputs.edges.each do |edge|
+          if edge.control? || edge.frame_state?
             edge.from.output_to edge.output_name, start, edge.input_name
           else
             users.each do |user|
@@ -144,15 +148,16 @@ module RubyJIT
           end
         end
 
-        outputs.edges.each do |edge|
-          if edge.control?
+        existing_finish.outputs.edges.each do |edge|
+          if edge.control? || edge.frame_state?
             finish.output_to edge.output_name, edge.to, edge.input_name
           else
             value.output_to edge.output_name, edge.to, edge.input_name
           end
         end
 
-        remove
+        existing_start.remove
+        existing_finish.remove if existing_finish != existing_start
       end
 
     end
@@ -187,6 +192,12 @@ module RubyJIT
 
       def control?
         names.any? { |n| n.to_s.start_with?('control') }
+      end
+
+      # Is this an edge to a frame state?
+
+      def frame_state?
+        names.any? { |n| n == :frame_state }
       end
 
       # Is this a schedule edge?

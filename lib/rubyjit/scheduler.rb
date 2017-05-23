@@ -50,16 +50,16 @@ module RubyJIT
       until to_sequence.empty?
         node = to_sequence.shift
 
-        # The start node has sequence number zero.
-
-        if node.op == :start
-          node.props[:sequence] = 0
-          next
-        end
-
         # We're only interested in the control inputs to the node.
 
         control_input_nodes = node.inputs.control_edges.from_nodes
+
+        # Nodes with no control input (such as start but possibly others) have sequence number zero.
+
+        if control_input_nodes.empty?
+          node.props[:sequence] = 0
+          next
+        end
 
         # If all control inputs have been given a sequence, we can give this
         # node as at least one greater than all of those.
@@ -312,7 +312,7 @@ module RubyJIT
 
     def nodes_in_block(first_node)
       # We're going to do a depth-first search of the graph from the first
-      # node, following control flow edges out, and global schedule eges in,
+      # node, following control flow edges out, and global schedule edges in,
       # and stopping when we find a node that ends a basic block such as a
       # branch.
 
@@ -466,10 +466,31 @@ module RubyJIT
                 insn.push node.props[:test]
               end
             end
+            
+            # Guards are like branches, but only have one side.
+            if node.op == :guard
+              insn.push node.inputs.with_input_name(:condition).from_node.props[:register]
+              
+              if node.props[:test]
+                insn.push node.props[:test]
+              end
+            end
 
             # Kind instructions need the kind.
             if node.op == :kind_is?
               insn.push node.props[:kind]
+            end
+  
+            # Frame states need the instructions, the ip, and to know where all values are.
+            if node.op == :frame_state
+              insn.push node.props[:insns]
+              insn.push node.props[:ip]
+              insn.push node.inputs.with_input_name(:receiver).from_node.props[:register]
+
+              insn.push node.inputs.edges.select { |e| e.input_name.to_s.start_with?('arg(') }.map { |e|
+                /arg\((\d+)\)/ =~ e.input_name.to_s
+                [$1.to_i, e.from.props[:register]]
+              }.sort_by { |pair| pair.first }.map { |pair| pair.last }
             end
 
             # Add the instruction to the block.

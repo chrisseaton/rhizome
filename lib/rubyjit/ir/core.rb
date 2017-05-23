@@ -43,7 +43,7 @@ module RubyJIT
         receiver.output_to :value, op_node, :receiver
         arg.output_to :value, op_node, :'arg(0)'
 
-        mega_send = Node.new(:send, name: op, argc: 1, profile: profile, megamorphic: true)
+        mega_send = Node.new(:send, name: op, argc: 1, profile: profile, megamorphic: true, uncommon: true)
         receiver.output_to :value, mega_send, :receiver
         arg.output_to :value, mega_send, :'arg(0)'
 

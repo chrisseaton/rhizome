@@ -274,13 +274,7 @@ module RubyJIT
             long: Fiddle::TYPE_LONG
         }
 
-        $block = block
-
-        Class.new(Fiddle::Closure) {
-          def call(*args)
-            $block.call(*args)
-          end
-        }.new(types_map[ret_type], arg_types.map(&types_map))
+        FromProcClosure.new(block, types_map[ret_type], arg_types.map(&types_map))
       end
     end
 
@@ -293,6 +287,23 @@ module RubyJIT
       flags |= POSIX::PROT_EXEC if executable?
       result = POSIX::mprotect(@address, @size, flags)
       raise 'could not change memory permissions' unless result
+    end
+
+    if Config::MRI
+
+      class FromProcClosure < Fiddle::Closure
+
+        def initialize(block, *other)
+          super *other
+          @block = block
+        end
+
+        def call(*args)
+          @block.call(*args)
+        end
+
+      end
+
     end
     
   end

@@ -24,15 +24,18 @@ module RubyJIT
   # Manages calls into native code, and back into Ruby. The extra
   # responsibility over just doing the call is also in marshalling the
   # arguments in and the return value out.
-    
+  
   class Interface
     
     attr_reader :call_managed_address
+    attr_reader :continue_in_interpreter_address
   
     def initialize(handles)
       @handles = handles
-      @call_managed_function = create_call_managed_function
+      @call_managed_function = Memory.from_proc(:long, [:long, :long], &method(:call_managed))
       @call_managed_address = @call_managed_function.to_i
+      @continue_in_interpreter_function = Memory.from_proc(:long, [:long, :long, :long], &method(:continue_in_interpreter))
+      @continue_in_interpreter_address = @continue_in_interpreter_function.to_i
     end
     
     # Call a native function (passed in as a proc).
@@ -43,24 +46,63 @@ module RubyJIT
       @handles.from_native(ret)
     end
     
-    # Create an address for calling back into Ruby that you can call from
-    # native code.
+    private
     
-    def create_call_managed_function
-      Memory.from_proc(:long, [:long, :long]) do |args_pointer, args_count|
-        # Read the receiver, method name, and then the args from the buffer
-        buffer = Memory.new((args_count + 2) * Config::WORD_BYTES, args_pointer)
-        handles = buffer.read_words(0, args_count + 2)
-        
-        # Convert argument handles to objects
-        receiver, name, *args = handles.map { |h| @handles.from_native(h) }
-        
-        # Make the call
-        ret = receiver.send(name, *args)
-        
-        # Convert the return object to a handle
-        @handles.to_native(ret)
+    # Call a managed function (called from native).
+    
+    def call_managed(args_pointer, args_count)
+      # Read the receiver, method name, and then the args from the buffer
+      buffer = Memory.new((args_count + 2) * Config::WORD_BYTES, args_pointer)
+      handles = buffer.read_words(0, args_count + 2)
+      
+      # Convert argument handles to objects
+      receiver, name, *args = handles.map { |h| @handles.from_native(h) }
+      
+      # Make the call
+      ret = receiver.send(name, *args)
+      
+      # Convert the return object to a handle
+      @handles.to_native(ret)
+    end
+
+    # Continue in the intepreter (called from native).
+
+    def continue_in_interpreter(frame_pointer, stack_pointer, frame_state_handle)
+      # The stack pointer we're passed is off by one because it was before the call.
+      stack_pointer -= Config::WORD_BYTES
+      
+      # Get the frame as a map of stack values as the graph describes them.
+
+      frame_size = frame_pointer - stack_pointer
+      frame_memory = Memory.new(frame_size, stack_pointer)
+      frame_words = frame_memory.read_words(0, frame_size / Config::WORD_BYTES)
+      frame_words.reverse!
+
+      frame_values = Hash[frame_words.each_with_index.map { |word, n|
+        [:"s#{(n + 1) * 8}", word]
+      }]
+      
+      # Get the frame state as a Ruby object.
+
+      frame_state = @handles.from_native(frame_state_handle)
+      
+      # Get the receier, arguments, stack, and locals, from the frame.
+      
+      receiver = @handles.from_native(frame_values[frame_state.receiver])
+
+      args = frame_state.args.map do |arg|
+        @handles.from_native(frame_values[arg])
       end
+
+      stack = []
+      locals = {}
+      
+      # Continue in the intepreter!
+
+      interpreter = Interpreter.new
+      value = interpreter.interpret(frame_state.insns, receiver, args, nil, frame_state.ip, stack, locals)
+
+      @handles.to_native(value)
     end
     
   end

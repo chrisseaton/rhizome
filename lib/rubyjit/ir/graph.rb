@@ -91,10 +91,10 @@ module RubyJIT
       # Find all the nodes that meet a condition - either a block or a simple
       # comparison by the operation name.
 
-      def find_nodes(op=nil)
+      def find_nodes(*ops)
         found = []
         visit_nodes do |node|
-          if !op || node.op == op
+          if ops.empty? || ops.include?(node.op)
             if !block_given? || yield(node)
               found.push node
             end

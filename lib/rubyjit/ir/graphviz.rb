@@ -205,6 +205,8 @@ module RubyJIT
             else
               label = 'branch'
             end
+          when :frame_state
+            label = "frame_state @#{node.props[:ip]}"
           else
             label = node.op.to_s
         end
@@ -223,6 +225,7 @@ module RubyJIT
       # graph. Use interesting labels, or nothing at all.
 
       def edge_label(edge)
+        frame_state = edge.names.all? { |n| n == :frame_state}
         all_control = edge.names.all? { |n| n == :control}
         any_control = edge.names.any? { |n| n == :control}
         all_schedule = edge.names.all? { |n| [:global_schedule, :local_schedule].include?(n)}
@@ -231,7 +234,7 @@ module RubyJIT
         merge_or_phi = [:merge, :phi].include?(edge.to.op)
         merge_to_phi = edge.from.op == :merge && edge.to.op == :phi
 
-        if ((all_control || all_value) && !merge_or_phi) || merge_to_phi || all_schedule
+        if frame_state || ((all_control || all_value) && !merge_or_phi) || merge_to_phi || all_schedule
           nil
         elsif [:merge, :phi].include?(edge.to.op)
           edge.input_name =~ /\w+\((.+)\)/
@@ -247,7 +250,13 @@ module RubyJIT
 
       def edge_color(edge)
         if edge.names.include?(:control)
-          :red
+          if edge.to.props[:uncommon]
+            :grey
+          else
+            :red
+          end
+        elsif [edge.from.op, edge.to.op].include?(:frame_state)
+          :purple
         else
           :blue
         end

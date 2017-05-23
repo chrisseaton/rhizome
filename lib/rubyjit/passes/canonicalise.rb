@@ -20,36 +20,30 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 module RubyJIT
-  module Backend
-    module General
+  module Passes
 
-      # Specialise branches for a particular test by taking the test off
-      # the condition edge and putting it into the branch as a property.
-      # Guards are treated the same way as branches.
+    # A phase to replace parts of the graph with a canonical representation so
+    # that other phases can look for just that representation.
 
-      class SpecialiseBranches
+    class Canonicalise
 
-        def run(graph)
-          modified = false
+      def run(graph)
+        modified = false
 
-          graph.find_nodes(:branch, :guard).each do |branch|
-            condition = branch.inputs.with_input_name(:condition).from_node
-            
-            if [:int64_zero?, :int64_not_zero?].include?(condition.op)
-              condition.inputs.from_node.output_to :value, branch, :condition
-              condition.remove
-              
-              branch.props[:test] = condition.op
-              
-              modified |= true
-            end
+        # Look at each node.
+
+        graph.all_nodes.each do |n|
+          # Replace not(int64_not_zero?) with int64_zero?
+
+          if n.op == :not && n.inputs.from_node.op == :int64_not_zero?
+            IR::Node.replace_multiple n.inputs.from_node, n, IR::Node.new(:int64_zero?)
           end
-
-          modified
         end
-        
+
+        modified
       end
 
     end
+
   end
 end

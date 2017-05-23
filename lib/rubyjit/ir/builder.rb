@@ -30,7 +30,8 @@ module RubyJIT
 
       attr_reader :graph
 
-      def initialize
+      def initialize(build_frame_states: false)
+        @build_frame_states = build_frame_states
         @graph = Graph.new
       end
 
@@ -310,6 +311,10 @@ module RubyJIT
         names_in = {}
         stack_in = []
 
+        # Create an initial frame state.
+
+        frame_state = FrameStateBuilder.new(insns, ip, names_in.dup, stack_in.dup)
+
         last_node = nil
         last_control = merge
 
@@ -416,6 +421,48 @@ module RubyJIT
               raise 'unknown instruction'
           end
 
+          # Does this instruction need a frame state becuase it could deoptimise?
+
+          if @build_frame_states && [:send].include?(insn.first)
+            # Create a frame state node?
+            
+            frame_state_node = Node.new(:frame_state, insns: frame_state.insns, ip: frame_state.ip)
+
+            # Send the value of the receiver to it.
+
+            Node.new(:self).output_to :value, frame_state_node, :receiver
+
+            # Send the value of all arguments to it.
+
+            args = insns.select { |i| i.first == :arg }.map { |i| i[1] }
+
+            if args.empty?
+              args_count = 0
+            else
+              args_count = args.max + 1
+            end
+
+            args_count.times do |n|
+              Node.new(:arg, n: n).output_to :value, frame_state_node, :"arg(#{n})"
+            end
+            
+            # Send the value of all names to it.
+
+            frame_state.names.each_pair do |name, value|
+              value.output_to :value, frame_state_node, name
+            end
+            
+            # Send all values on the stack to it.
+
+            frame_state.stack.each_with_index do |value, index|
+              value.output_to :value, frame_state_node, :"stack(#{index})"
+            end
+            
+            # Add the frame state to the instruction by adding a special edge.
+
+            frame_state_node.output_to :frame_state, last_node
+          end
+
           # The trace and send instructions have side effects - link them into
           # the backbone of control flow so that we know one instruction with
           # side effects needs to happen before any other after it. The jump and
@@ -426,12 +473,21 @@ module RubyJIT
             last_control.output_to :control, last_node
             last_control = last_node
           end
+
+          # If this instruction potentially has side-effects, create a new
+          # frame state for the state after the instruction.
+
+          if [:send].include?(insn.first)
+            frame_state = FrameStateBuilder.new(insns, ip + n, names.dup, stack.dup)
+          end
         end
 
         GraphFragment.new(names_in, stack_in, merge, last_node, last_control, names, stack)
       end
 
     end
+
+    FrameStateBuilder = Struct.new(:insns, :ip, :names, :stack)
 
   end
 end
