@@ -137,6 +137,16 @@ hasn't been defined yet, and records all the places that it has done so. When
 you do define the label later on, it goes back to the record of places where the
 jump was used before it was defined and puts the actual address in.
 
+#### References
+
+In some cases you may want to reference Ruby objects from compiled code that you
+emit from the assembler. The Ruby GC does not understand our compiled code, so
+if the only place that the objects are referenced from is the compiled code the
+GC may collect them. To prevent this, the assembler maintains a conventional
+Ruby `Array` of objects that were referenced from the compiled code. As long as
+you reference the assembler or this array of references, the objects will be
+kept alive.
+
 ### More technical details
 
 The rules for encoding assembly instructions to machine code bytes in AMD64 are

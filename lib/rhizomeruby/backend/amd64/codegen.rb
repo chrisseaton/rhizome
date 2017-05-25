@@ -223,14 +223,12 @@ module Rhizome
             @assembler.label deopt.label
             @assembler.mov RBP, RDI
             @assembler.mov RSP, RSI
-            @assembler.mov Value.new(@handles.to_native(deopt.frame_state)), RDX
+            @assembler.mov Handle.new(deopt.frame_state), RDX
             @assembler.mov Value.new(@interface.continue_in_interpreter_address), RAX
             @assembler.call Indirection.new(RAX)
             @assembler.mov RBP, RSP
             @assembler.pop RBP
             @assembler.ret
-
-            @assembler.reference deopt.frame_state
           end
         end
 

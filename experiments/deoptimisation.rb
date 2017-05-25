@@ -99,9 +99,9 @@ blocks.each_with_index do |block, n|
   end
 end
 
-assembler = Rhizome::Backend::AMD64::Assembler.new
 handles = Rhizome::Handles.new
 interface = Rhizome::Interface.new(handles)
+assembler = Rhizome::Backend::AMD64::Assembler.new(handles)
 
 codegen = Rhizome::Backend::AMD64::Codegen.new(assembler, handles, interface)
 codegen.generate blocks

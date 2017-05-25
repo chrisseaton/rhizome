@@ -59,6 +59,10 @@ module Rhizome
       # An absolute value.
 
       Value = Struct.new(:value)
+
+      # A handle to a Ruby object.
+
+      Handle = Struct.new(:object)
       
       # Indirection of something else.
       
@@ -109,7 +113,8 @@ module Rhizome
         attr_reader :bytes
         attr_reader :references
 
-        def initialize
+        def initialize(handles=nil)
+          @handles = handles
           @bytes = []
           @references = []
         end
@@ -126,6 +131,11 @@ module Rhizome
         end
 
         def mov(source, dest)
+          if source.is_a?(Handle)
+            reference source.object
+            source = Value.new(@handles.to_native(source.object))
+          end
+
           if source.is_a?(Register) && dest.is_a?(Register)
             raise if source.encoding >= 8
             raise if dest.encoding >= 8
