@@ -1,25 +1,25 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Disassembler
 
-The RubyJIT disassembler is the reverse of the assembler. It takes binary
+The Rhizome disassembler is the reverse of the assembler. It takes binary
 machine code and gives you a human-readable assembly code that can be printed to
 the screen.
 
 ### Why we need it
 
-Inside RubyJIT there is never a textual representation of the assembly code that
+Inside Rhizome there is never a textual representation of the assembly code that
 we generate. The code generator calls methods on the assembler which builds up
 an array of machine code bytes. In a conventional static compiler, the code
 generator often generates a text stream that is then fed into the assembler, in
 human-readable assembly code text syntax. If you want to read the assembly code,
 you can just get that text stream.
 
-RubyJIT doesn't generate an intermediate text format because we run everything
+Rhizome doesn't generate an intermediate text format because we run everything
 inside the Ruby process and so we can communicate between stages of our compiler
 using objects.
 
-So if we do ever want to read the assembly code that RubyJIT produces then we
+So if we do ever want to read the assembly code that Rhizome produces then we
 need to have a tool to reproduce it from the binary machine code. This is what
 the disassembler does.
 

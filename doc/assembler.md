@@ -1,15 +1,15 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Assembler
 
-The RubyJIT assembler takes the names of assembly code instructions, and their
+The Rhizome assembler takes the names of assembly code instructions, and their
 arguments, and converts them to the binary machine code which your processor can
 directly run.
 
 The assembler is an object that has a method on it for each assembly code
 instruction. Assembly registers are available as Ruby constants, and registers
 support arithmetic to use a register as the base of a computed address. This
-makes the RubyJIT assembler work a bit like a DSL for writing assembly code in
+makes the Rhizome assembler work a bit like a DSL for writing assembly code in
 Ruby.
 
 For example this code assembles a machine code function to add two integers.
@@ -28,7 +28,7 @@ assembler.ret
 assembler.bytes # -> 101010101001000100010011110010101001000100010010111...
 ```
 
-RubyJIT only has an assembler for the AM64 (also know as x86-64, or x64)
+Rhizome only has an assembler for the AM64 (also know as x86-64, or x64)
 instruction set architecture, supported by most laptops and servers.
 
 We'll just take a couple of paragraphs here to explain AMD64 assembly.
@@ -75,7 +75,7 @@ purpose registers. We then add them together and store the result back into
 `RAX`, where we leave it for the calling function to read the return value.
 
 We'll explain other details of AMD64 assembly where relevant, but it isn't
-essential to know much more to understand how RubyJIT works.
+essential to know much more to understand how Rhizome works.
 
 ### Why we need it
 
@@ -152,7 +152,7 @@ which you may think would be very simple, such as `mov` actually has 34
 different ways of being encoded for different types of operands. There is a
 specified way to encode all of these, but it is far from simple.
 
-In RubyJIT we have implemented a small subset of AMD64 instruction encoding to
+In Rhizome we have implemented a small subset of AMD64 instruction encoding to
 keep the code simple, but this means that the number of instructions available
 to use is limited. For example, it is normally possible to add a value in a
 register to a value loaded from memory and store the result back to memory in

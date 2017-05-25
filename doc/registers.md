@@ -1,8 +1,8 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Register allocator
 
-The RubyJIT register allocator decides which values to store in which registers,
+The Rhizome register allocator decides which values to store in which registers,
 and which values to store in memory instead. Your processor almost always has
 less registers than we would like, so the register allocator normally has to
 decide which registers to re-use to be as efficient as possible in its use of

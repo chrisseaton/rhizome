@@ -21,13 +21,13 @@
 
 # Illustrates using the AM64 disassembler directly.
 
-require_relative '../lib/rubyjit'
+require_relative '../lib/rhizomeruby'
 
-raise 'this experiment only works on AMD64' unless RubyJIT::Config::AMD64
+raise 'this experiment only works on AMD64' unless Rhizome::Config::AMD64
 
 machine_code = '554889e548897df8488975f0488b45f8488b4df04801c85dc3'.scan(/../).map { |b| b.to_i(16) }
 
-disassembler = RubyJIT::Backend::AMD64::Disassembler.new(machine_code)
+disassembler = Rhizome::Backend::AMD64::Disassembler.new(machine_code)
 
 while disassembler.more?
   puts disassembler.next

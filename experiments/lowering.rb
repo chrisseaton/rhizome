@@ -21,91 +21,91 @@
 
 # Illustrates the process of lowering.
 
-require_relative '../lib/rubyjit'
-require_relative '../spec/rubyjit/fixtures'
+require_relative '../lib/rhizomeruby'
+require_relative '../spec/rhizomeruby/fixtures'
 
-puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+puts 'this experiment would draw graphs if you had Graphviz installed' unless Rhizome::IR::Graphviz.available?
 
-interpreter = RubyJIT::Interpreter.new
-profile = RubyJIT::Profile.new
+interpreter = Rhizome::Interpreter.new
+profile = Rhizome::Profile.new
 
 100.times do
-  interpreter.interpret RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [14, 2], profile
+  interpreter.interpret Rhizome::Fixtures::ADD_BYTECODE_RHIZOME, Rhizome::Fixtures, [14, 2], profile
 end
 
-builder = RubyJIT::IR::Builder.new
-builder.build RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, profile
+builder = Rhizome::IR::Builder.new
+builder.build Rhizome::Fixtures::ADD_BYTECODE_RHIZOME, profile
 graph = builder.graph
 
-passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Passes::PostBuild.new,
-    RubyJIT::Passes::DeadCode.new,
-    RubyJIT::Passes::NoChoicePhis.new,
-    RubyJIT::Passes::InlineCaching.new,
-    RubyJIT::Passes::Inlining.new,
-    RubyJIT::Passes::InsertSafepoints.new
+passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Passes::PostBuild.new,
+    Rhizome::Passes::DeadCode.new,
+    Rhizome::Passes::NoChoicePhis.new,
+    Rhizome::Passes::InlineCaching.new,
+    Rhizome::Passes::Inlining.new,
+    Rhizome::Passes::InsertSafepoints.new
 )
 
 passes_runner.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'before.pdf'
 end
 
-passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Backend::General::AddTagging.new
+passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Backend::General::AddTagging.new
 )
 
 passes_runner.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'after-add-tagging.pdf'
 end
 
-passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Backend::General::ExpandTagging.new
+passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Backend::General::ExpandTagging.new
 )
 
 passes_runner.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'after-expand-tagging.pdf'
 end
 
-passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Backend::General::SpecialiseBranches.new
+passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Backend::General::SpecialiseBranches.new
 )
 
 passes_runner.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'after-specialise-branches.pdf'
 end
 
-passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Backend::General::ExpandCalls.new
+passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Backend::General::ExpandCalls.new
 )
 
 passes_runner.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'after-expand-calls.pdf'
 end
 
-scheduler = RubyJIT::Scheduler.new
+scheduler = Rhizome::Scheduler.new
 scheduler.schedule graph
 
-register_allocator = RubyJIT::RegisterAllocator.new
+register_allocator = Rhizome::RegisterAllocator.new
 register_allocator.allocate_infinite graph
 
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'scheduled-register-allocated.pdf'
 end
 

@@ -1,4 +1,4 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Inlining
 
@@ -8,7 +8,7 @@ time. It's particularly important in Ruby because almost all operations, even
 basic arithmetic, is hidden inside core library methods which have to be inlined
 to apply even basic optimisations.
 
-The RubyJIT graphical IR makes inlining easy - we don't have to do much more
+The Rhizome graphical IR makes inlining easy - we don't have to do much more
 than replace the send node with the graph of the method we are inlining.
 
 In order to be able to inline core library methods, which don't exist as Ruby
@@ -16,7 +16,7 @@ code, we also need implemenentations of these routines directly in IR.
 
 ### Why we need it
 
-RubyJIT is a method-at-a-time JIT. This means that the compiler runs on just one
+Rhizome is a method-at-a-time JIT. This means that the compiler runs on just one
 method at a time. This is as opposed to something like a tracing JIT, which runs
 on a linear path of execution, no matter which method the code in that trace
 comes from.
@@ -56,7 +56,7 @@ may need to rename all the local variables so they don't conflict between the
 two methods. You will need to replace a return instruction with a jump to the
 point where the inlined method would have returned, and so on.
 
-However because RubyJIT uses a sea-of-nodes graphical IR, inlining is fairly
+However because Rhizome uses a sea-of-nodes graphical IR, inlining is fairly
 straight forward. We don't have to do much more than take out the send node, and
 replace it with the graph from the method that we are inlining. We then replace
 `self` nodes in the inlined method with an edge to whatever the receiver edge
@@ -162,7 +162,7 @@ sends that make inlining applicable.
 
 The really hard part of inlining isn't applying it when you have decided to do
 it, it's deciding when to do it in the first place, which isn't something we
-have tackled in RubyJIT. We always inline core library methods, but we only
+have tackled in Rhizome. We always inline core library methods, but we only
 support a couple of them, and we don't consider inlining user methods at all.
 
 When you start to inline more complex methods you have to think about how deep

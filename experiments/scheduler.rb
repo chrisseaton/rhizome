@@ -21,48 +21,48 @@
 
 # Illustrates the scheduling process, deciding what order to run your program in.
 
-require_relative '../lib/rubyjit'
-require_relative '../spec/rubyjit/fixtures'
+require_relative '../lib/rhizomeruby'
+require_relative '../spec/rhizomeruby/fixtures'
 
-puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+puts 'this experiment would draw graphs if you had Graphviz installed' unless Rhizome::IR::Graphviz.available?
 
-builder = RubyJIT::IR::Builder.new
-builder.build RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT
+builder = Rhizome::IR::Builder.new
+builder.build Rhizome::Fixtures::FIB_BYTECODE_RHIZOME
 graph = builder.graph
 
-postbuild = RubyJIT::Passes::PostBuild.new
+postbuild = Rhizome::Passes::PostBuild.new
 postbuild.run graph
 
-passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Passes::DeadCode.new,
-    RubyJIT::Passes::NoChoicePhis.new
+passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Passes::DeadCode.new,
+    Rhizome::Passes::NoChoicePhis.new
 )
 
 passes_runner.run graph
 
-scheduler = RubyJIT::Scheduler.new
+scheduler = Rhizome::Scheduler.new
 scheduler.partially_order graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'order.pdf'
 end
 
 scheduler.global_schedule graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'global.pdf'
 end
 
 scheduler.local_schedule graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'local.pdf'
 end
 
-register_allocator = RubyJIT::RegisterAllocator.new
+register_allocator = Rhizome::RegisterAllocator.new
 register_allocator.allocate_infinite graph
 
 blocks = scheduler.linearize(graph)

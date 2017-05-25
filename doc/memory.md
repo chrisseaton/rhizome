@@ -1,4 +1,4 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Memory system
 
@@ -23,18 +23,18 @@ even Ruby's underlying mechanism for allocating native memory, `malloc`, because
 we need our memory to have the executable permission. Our processor won't
 execute instructions from memory without this permission. It's the operating
 system kernel that can set memory access permission, so we need memory that the
-kernel is more managing. This is what the RubyJIT memory system does - it asks
+kernel is more managing. This is what the Rhizome memory system does - it asks
 the kernel directly for native memory, it can set the read, write and execute
 permissions, it can read and write the memory, and it can call the memory as a
 machine code function.
 
-The RubyJIT memory system is therefore a low level tool of our just-in-time
+The Rhizome memory system is therefore a low level tool of our just-in-time
 compiler, but a key one that unlocks the magic door that we need out of Ruby
 and into the world where we can run our own machine code.
 
 ### How it works
 
-The RubyJIT memory system allocates memory using the `mmap` system call. A
+The Rhizome memory system allocates memory using the `mmap` system call. A
 system call is a library function provided by the operating system kernel. Like
 many system calls, `mmap` does quite a lot. You may have heard of `mmap` in the
 context of making files available as memory without having to manually read all

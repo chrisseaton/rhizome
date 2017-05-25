@@ -1,8 +1,8 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Intermediate representation
 
-The RubyJIT intermediate representation is the data structure that we use to
+The Rhizome intermediate representation is the data structure that we use to
 represent a Ruby program as we compile and optimise it.
 
 Our intermediate representation is not a research innovation, but it may be
@@ -245,14 +245,14 @@ otherwise V8 doesn't. The server compiler (also called 'C2', the one you get
 with the `-server` flag) in the HotSpot JVM uses a graphical intermediate
 representation, as does the Graal JVM compiler.
 
-It is the C2 compiler's IR on which RubyJIT's is based in terms of structure,
+It is the C2 compiler's IR on which Rhizome's is based in terms of structure,
 but not implementation details. C2's IR is described in papers [1](sea) and
 [2](c2) by the original designer, Cliff Click, and others.
 
 [sea]: http://grothoff.org/christian/teaching/2007/3353/papers/click95simple.pdf
 [c2]: https://www.usenix.org/legacy/events/jvm01/full_papers/paleczny/paleczny.pdf
 
-Graphical IR's like RubyJIT's are a form of 'program dependence graph'. I'm not
+Graphical IR's like Rhizome's are a form of 'program dependence graph'. I'm not
 sure of the history but I think originally the graphical part was done simply
 within basic blocks and nodes did not usually flow between basics. I believe
 that the [`libFirm`](firm) library for writing compilers is a graphical IR but
@@ -270,7 +270,7 @@ talking about how they made their representation use less memory.
 It may also be the case that graphical IRs are harder to visualise and
 understand which makes working with them more difficult. You probably do need
 some kind of graphical tool to understand non-trivial graphs, rather than
-relying on pretty-printed text. The RubyJIT graph visualiser does this for us.
+relying on pretty-printed text. The Rhizome graph visualiser does this for us.
 
 ### Potential projects
 

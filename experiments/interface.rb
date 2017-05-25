@@ -21,13 +21,13 @@
 
 # Demonstrates calling into native code and back into Ruby.
 
-require_relative '../lib/rubyjit'
-require_relative '../spec/rubyjit/fixtures'
+require_relative '../lib/rhizomeruby'
+require_relative '../spec/rhizomeruby/fixtures'
 
-raise 'this experiment only works on AMD64' unless RubyJIT::Config::AMD64
+raise 'this experiment only works on AMD64' unless Rhizome::Config::AMD64
 
-handles = RubyJIT::Handles.new(RubyJIT::Config::WORD_BITS)
-interface = RubyJIT::Interface.new(handles)
+handles = Rhizome::Handles.new(Rhizome::Config::WORD_BITS)
+interface = Rhizome::Interface.new(handles)
 
 c = interface.call_managed_address
 
@@ -35,7 +35,7 @@ puts "To call from native to manged, call 0x#{c.to_s(16)} with a pointer and a n
 
 s = handles.to_native(:+)
 
-if RubyJIT::Config::AMD64
+if Rhizome::Config::AMD64
   machine_code = [
     0x56,                   # push rsi      push the argument
     0x48, 0xb8, *[s].pack('Q<').bytes,
@@ -57,7 +57,7 @@ else
   raise 'no machine code sample for this architecture'
 end
 
-memory = RubyJIT::Memory.new(machine_code.size)
+memory = Rhizome::Memory.new(machine_code.size)
 memory.write 0, machine_code
 memory.executable = true
 native_method = memory.to_proc([:long, :long], :long)

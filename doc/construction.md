@@ -1,9 +1,9 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Graph construction
 
-Graph construction is the process of going from the RubyJIT bytecode to the
-RubyJIT graph intermediate representation so that optimisations can be applied
+Graph construction is the process of going from the Rhizome bytecode to the
+Rhizome graph intermediate representation so that optimisations can be applied
 and the program converted to machine code.
 
 ### Why we need it
@@ -29,7 +29,7 @@ def fib(n)
 end
 ```
 
-We have this program represented in the RubyJIT bytecode format:
+We have this program represented in the Rhizome bytecode format:
 
 ```
  0  arg      0

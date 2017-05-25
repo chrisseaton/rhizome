@@ -19,11 +19,11 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# Illustrates how to run RubyJIT bytecode in the interpreter.
+# Illustrates how to run Rhizome bytecode in the interpreter.
 
-require_relative '../lib/rubyjit'
-require_relative '../spec/rubyjit/fixtures'
+require_relative '../lib/rhizomeruby'
+require_relative '../spec/rhizomeruby/fixtures'
 
-interpreter = RubyJIT::Interpreter.new
+interpreter = Rhizome::Interpreter.new
 
-puts interpreter.interpret(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, self, [14, 2])
+puts interpreter.interpret(Rhizome::Fixtures::ADD_BYTECODE_RHIZOME, self, [14, 2])

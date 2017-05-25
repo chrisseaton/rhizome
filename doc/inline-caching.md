@@ -1,4 +1,4 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Inline caching
 
@@ -8,7 +8,7 @@ up which method to call for a given object and method name by caching it. The
 cache is called 'inline' because it's part of the structure of the program
 itself, not a separate data structure.
 
-RubyJIT implements simple monomoprhic inline caching based on profile
+Rhizome implements simple monomoprhic inline caching based on profile
 information collected by the interpreter.
 
 ### Why we need it
@@ -121,7 +121,7 @@ receiver kinds and have monomorphic sends for the cached methods for them. This
 is called a polymorphic inline cache.
 
 There are then lots of questions about what order to put the guards for the
-kinds in and how many to have. In RubyJIT we only have monomorphic inline
+kinds in and how many to have. In Rhizome we only have monomorphic inline
 caches.
 
 ### More technical details
@@ -140,7 +140,7 @@ does both the profiling and then the inline caching itself, storing the cache
 information as data alongside the instructions and updating it when the cache
 misses so it always has the last method all cached.
 
-In RubyJIT the inline cache is instead a structure created in the compiler
+In Rhizome the inline cache is instead a structure created in the compiler
 graph, pretty much as if the user wrote it out in Ruby. The advantage of is that
 this means that the nodes created can then manipulated by later optimisation
 passes. For example, multiple guards that check the same thing can be combined

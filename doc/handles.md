@@ -1,8 +1,8 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Native handles and tagging
 
-RubyJIT needs to somehow refer to Ruby objects in native code, using only the
+Rhizome needs to somehow refer to Ruby objects in native code, using only the
 primitives that the processor understands. We can't use raw pointers to objects
 from the host virtual machine, as we cannot easily get access to these, so
 instead we use handles - unique, word-sized integers - that map to Ruby objects.
@@ -14,7 +14,7 @@ in machine code without talking to the host virtual machine. This is called
 
 ### Why we need it
 
-When we call a native function that RubyJIT has compiled and pass it a Ruby
+When we call a native function that Rhizome has compiled and pass it a Ruby
 object as an argument, what do we actually pass into the native code?
 
 We can't pass a pointer to the host virtual machine's representation of the Ruby
@@ -81,9 +81,9 @@ You can take the `object_id` for a `fixnum` and get the value back by shifting
 right by one. You don't need to subtract the one, as the one is shifted off the
 right-hand side of the value.
 
-We implement the same scheme as this in RubyJIT.
+We implement the same scheme as this in Rhizome.
 
-This is really important to use because RubyJIT can emit machine code to do
+This is really important to use because Rhizome can emit machine code to do
 these operations directly, without having to talk to the host virtual machine.
 We can detect if a handle is a `fixnum` by looking at the bottom bit, and we can
 convert a handle to an integer value if it is a `fixnum` by shifting right by

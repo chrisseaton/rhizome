@@ -21,11 +21,11 @@
 
 # Illustrates using the AM64 assembler directly.
 
-require_relative '../lib/rubyjit'
+require_relative '../lib/rhizomeruby'
 
-raise 'this experiment only works on AMD64' unless RubyJIT::Config::AMD64
+raise 'this experiment only works on AMD64' unless Rhizome::Config::AMD64
 
-include RubyJIT::Backend::AMD64
+include Rhizome::Backend::AMD64
 
 assembler = Assembler.new
 
@@ -63,7 +63,7 @@ end
 
 puts
 
-memory = RubyJIT::Memory.new(machine_code.size)
+memory = Rhizome::Memory.new(machine_code.size)
 memory.write 0, machine_code
 memory.executable = true
 native_method = memory.to_proc([:long, :long], :long)

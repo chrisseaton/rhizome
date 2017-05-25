@@ -21,9 +21,9 @@
 
 # Illustrates native handles and tagging.
 
-require_relative '../lib/rubyjit'
+require_relative '../lib/rhizomeruby'
 
-handles = RubyJIT::Handles.new
+handles = Rhizome::Handles.new
 
 puts 'fixnums always have the lowest bit set'
 

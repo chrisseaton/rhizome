@@ -1,8 +1,8 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Parser
 
-The RubyJIT parser isn't a parser for Ruby source code. Instead, it's a parser
+The Rhizome parser isn't a parser for Ruby source code. Instead, it's a parser
 for the internal bytecode formats used by different implementations of Ruby.
 
 This is very important, because it allows us to not have to worry about parsing
@@ -16,14 +16,14 @@ machine code.
 
 Each Ruby implementation has a different internal bytecode format, so we
 actually have one parser corresponding to each implementation. They use simple
-regular expressions to translate the different formats to the RubyJIT bytecode
+regular expressions to translate the different formats to the Rhizome bytecode
 format, described in another document.
 
 ### Why we need it
 
-The RubyJIT parser takes the multiple bytecode formats used by the different
+The Rhizome parser takes the multiple bytecode formats used by the different
 Ruby interpreters, which have different design goals and technologies, and
-translates them into the single, simpler, more explicit format of the RubyJIT
+translates them into the single, simpler, more explicit format of the Rhizome
 bytecode.
 
 ### How it works
@@ -40,7 +40,7 @@ what we need.
 We compare each line of bytecode against a list of regular expression patterns,
 extract the information we want such as the instruction name and the name of
 local variables or the value of numbers, and build a new list of instructions in
-our own RubyJIT format.
+our own Rhizome format.
 
 #### Two-pass parsing
 
@@ -50,7 +50,7 @@ Rubinius use the actual byte offsets of instructions relative to the start of
 the method. JRuby uses more formally named labels that appear in the bytecode
 like additional instructions.
 
-RubyJIT uses the simpler addressing system of the instruction index, discounting
+Rhizome uses the simpler addressing system of the instruction index, discounting
 how many bytes they may need if they were ever serialised.
 
 The problem is that jumps and branches usually go forward in the stream of
@@ -70,7 +70,7 @@ To access MRI's internal bytecode for a method we use
 `experiments/bytecode/print_bytecode_mri.rb` to see what this produces.
 
 Instructions are matched by regular expressions and transliterated almost
-one-for-one from the MRI format to the RubyJIT format. In many cases they are
+one-for-one from the MRI format to the Rhizome format. In many cases they are
 generalised, translating many variants to a single generic variant. In some
 cases instructions expand to become two instructions, such as `branchunless`
 becoming `not` and then `branch`.
@@ -103,9 +103,9 @@ Rubinius this returns a rich data structure, but we just convert that to text
 and parse from there. Run `experiments/bytecode/print_bytecode_jruby.rb` to see
 what this produces.
 
-JRuby's bytecode format is register-based, and RubyJIT's format is stack-based.
+JRuby's bytecode format is register-based, and Rhizome's format is stack-based.
 We use a simple solution to this problem, and treat each of JRuby's registers as
-if it were a local variable. This means that RubyJIT bytecode created from JRuby
+if it were a local variable. This means that Rhizome bytecode created from JRuby
 bytecode is much larger than from MRI or Rubinius, often with many redundant
 loads and stores of these local variables.
 

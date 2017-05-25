@@ -21,26 +21,26 @@
 
 # Prints a graph for a compare function to demonstrate merge and phi nodes.
 
-require_relative '../lib/rubyjit'
-require_relative '../spec/rubyjit/fixtures'
+require_relative '../lib/rhizomeruby'
+require_relative '../spec/rhizomeruby/fixtures'
 
-puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+puts 'this experiment would draw graphs if you had Graphviz installed' unless Rhizome::IR::Graphviz.available?
 
-builder = RubyJIT::IR::Builder.new
-builder.build RubyJIT::Fixtures::COMPARE_BYTECODE_RUBYJIT
+builder = Rhizome::IR::Builder.new
+builder.build Rhizome::Fixtures::COMPARE_BYTECODE_RHIZOME
 graph = builder.graph
 
-postbuild = RubyJIT::Passes::PostBuild.new
+postbuild = Rhizome::Passes::PostBuild.new
 postbuild.run graph
 
-passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Passes::DeadCode.new,
-    RubyJIT::Passes::NoChoicePhis.new
+passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Passes::DeadCode.new,
+    Rhizome::Passes::NoChoicePhis.new
 )
 
 passes_runner.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'compare.pdf'
 end

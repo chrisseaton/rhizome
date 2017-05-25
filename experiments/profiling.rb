@@ -21,8 +21,8 @@
 
 # Illustrates how the interpreter can profile your Ruby program.
 
-require_relative '../lib/rubyjit'
-require_relative '../spec/rubyjit/fixtures'
+require_relative '../lib/rhizomeruby'
+require_relative '../spec/rhizomeruby/fixtures'
 
 # We run run the interpreter normally...
 
@@ -34,18 +34,18 @@ def fib(n)
   end
 end
 
-interpreter = RubyJIT::Interpreter.new
+interpreter = Rhizome::Interpreter.new
 
 100.times do
-  interpreter.interpret RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [10]
+  interpreter.interpret Rhizome::Fixtures::FIB_BYTECODE_RHIZOME, Rhizome::Fixtures, [10]
 end
 
 # Or we can run with a profile...
 
-profile = RubyJIT::Profile.new
+profile = Rhizome::Profile.new
 
 100.times do
-  interpreter.interpret RubyJIT::Fixtures::FIB_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [10], profile
+  interpreter.interpret Rhizome::Fixtures::FIB_BYTECODE_RHIZOME, Rhizome::Fixtures, [10], profile
 end
 
 # This profile will then be able to give us information about what your

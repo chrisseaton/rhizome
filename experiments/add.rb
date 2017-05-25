@@ -21,18 +21,18 @@
 
 # Prints a simple graph for an add function.
 
-require_relative '../lib/rubyjit'
-require_relative '../spec/rubyjit/fixtures'
+require_relative '../lib/rhizomeruby'
+require_relative '../spec/rhizomeruby/fixtures'
 
-puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+puts 'this experiment would draw graphs if you had Graphviz installed' unless Rhizome::IR::Graphviz.available?
 
-builder = RubyJIT::IR::Builder.new
-fragment = builder.basic_block_to_fragment(RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT)
-graph = RubyJIT::IR::Graph.from_fragment(fragment)
-postbuild = RubyJIT::Passes::PostBuild.new
+builder = Rhizome::IR::Builder.new
+fragment = builder.basic_block_to_fragment(Rhizome::Fixtures::ADD_BYTECODE_RHIZOME)
+graph = Rhizome::IR::Graph.from_fragment(fragment)
+postbuild = Rhizome::Passes::PostBuild.new
 postbuild.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  graphviz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  graphviz = Rhizome::IR::Graphviz.new(graph)
   graphviz.visualise 'add.pdf'
 end

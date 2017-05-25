@@ -1,4 +1,4 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Lowering
 
@@ -90,7 +90,7 @@ The lowering process is often accompanied with a transition in the data
 structure used to represent the program. There may be one data structure for a
 high-level intermediate representation (an *HIR*) and another separate data
 structure that works in a different way for a low-level intermediate
-representation (an *LIR*). We don't do this in RubyJIT because we are trying to
+representation (an *LIR*). We don't do this in Rhizome because we are trying to
 keep the graph in one format, with a single set of operations and debugging
 visualisations. This lets us run the same optimisation passes on the lowered
 graphs as we did on the high-level graphs.

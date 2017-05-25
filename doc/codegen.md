@@ -1,4 +1,4 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Code generation
 
@@ -39,10 +39,10 @@ instructions, emitting machine instructions to an assembler for each.
 
 ### More technical details
 
-RubyJIT doesn't really tackle the more interesting problem of good instruction
+Rhizome doesn't really tackle the more interesting problem of good instruction
 selection. Instruction sets like AMD64 are very complicated and there are many
 ways to achieve the same result with different combinations of instructions.
-RubyJIT just emits instructions for each node that will do the job from a small
+Rhizome just emits instructions for each node that will do the job from a small
 set of options. A more sophisticated code generator will look at multiple
 operations at the same time and consider how the overall effect that is wanted
 could be achieved with less instructions than operations. One technical involves
@@ -50,7 +50,7 @@ looking at the instructions available on the processor as a set of templates and
 scanning over the graph seeing where they could fit over sets of nodes.
 
 Instruction scheduling is another interesting problem that we haven't tackled in
-RubyJIT. We've scheduled the graph, finding out when one node must have run
+Rhizome. We've scheduled the graph, finding out when one node must have run
 before another and encoding that, but we haven't considered what to do with the
 remaining freedom we have to schedule nodes that don't have further constraints.
 If we used knowledge of how the processor works internally - how many arithmetic

@@ -21,46 +21,46 @@
 
 # Illustrates code generation.
 
-require_relative '../lib/rubyjit'
-require_relative '../spec/rubyjit/fixtures'
+require_relative '../lib/rhizomeruby'
+require_relative '../spec/rhizomeruby/fixtures'
 
-raise 'this experiment only works on AMD64' unless RubyJIT::Config::AMD64
+raise 'this experiment only works on AMD64' unless Rhizome::Config::AMD64
 
-interpreter = RubyJIT::Interpreter.new
-profile = RubyJIT::Profile.new
+interpreter = Rhizome::Interpreter.new
+profile = Rhizome::Profile.new
 
 100.times do
-  interpreter.interpret RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [14, 2], profile
+  interpreter.interpret Rhizome::Fixtures::ADD_BYTECODE_RHIZOME, Rhizome::Fixtures, [14, 2], profile
 end
 
-builder = RubyJIT::IR::Builder.new
-builder.build RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, profile
+builder = Rhizome::IR::Builder.new
+builder.build Rhizome::Fixtures::ADD_BYTECODE_RHIZOME, profile
 graph = builder.graph
 
-passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Passes::PostBuild.new,
-    RubyJIT::Passes::DeadCode.new,
-    RubyJIT::Passes::NoChoicePhis.new,
-    RubyJIT::Passes::InlineCaching.new,
-    RubyJIT::Passes::Inlining.new,
-    RubyJIT::Passes::InsertSafepoints.new
+passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Passes::PostBuild.new,
+    Rhizome::Passes::DeadCode.new,
+    Rhizome::Passes::NoChoicePhis.new,
+    Rhizome::Passes::InlineCaching.new,
+    Rhizome::Passes::Inlining.new,
+    Rhizome::Passes::InsertSafepoints.new
 )
 
 passes_runner.run graph
 
-passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Backend::General::AddTagging.new,
-    RubyJIT::Backend::General::ExpandTagging.new,
-    RubyJIT::Backend::General::SpecialiseBranches.new,
-    RubyJIT::Backend::General::ExpandCalls.new
+passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Backend::General::AddTagging.new,
+    Rhizome::Backend::General::ExpandTagging.new,
+    Rhizome::Backend::General::SpecialiseBranches.new,
+    Rhizome::Backend::General::ExpandCalls.new
 )
 
 passes_runner.run graph
 
-scheduler = RubyJIT::Scheduler.new
+scheduler = Rhizome::Scheduler.new
 scheduler.schedule graph
 
-register_allocator = RubyJIT::RegisterAllocator.new
+register_allocator = Rhizome::RegisterAllocator.new
 register_allocator.allocate_infinite_stack graph
 
 blocks = scheduler.linearize(graph)
@@ -75,22 +75,22 @@ end
 
 puts
 
-assembler = RubyJIT::Backend::AMD64::Assembler.new
-handles = RubyJIT::Handles.new
-interface = RubyJIT::Interface.new(handles)
+assembler = Rhizome::Backend::AMD64::Assembler.new
+handles = Rhizome::Handles.new
+interface = Rhizome::Interface.new(handles)
 
-codegen = RubyJIT::Backend::AMD64::Codegen.new(assembler, handles, interface)
+codegen = Rhizome::Backend::AMD64::Codegen.new(assembler, handles, interface)
 codegen.generate blocks
 
 machine_code = assembler.bytes
 
-disassembler = RubyJIT::Backend::AMD64::Disassembler.new(machine_code)
+disassembler = Rhizome::Backend::AMD64::Disassembler.new(machine_code)
 
 while disassembler.more?
   puts disassembler.next
 end
 
-memory = RubyJIT::Memory.new(machine_code.size)
+memory = Rhizome::Memory.new(machine_code.size)
 memory.write 0, machine_code
 memory.executable = true
 native_method = memory.to_proc([:long, :long, :long], :long)

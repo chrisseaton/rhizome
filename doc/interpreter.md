@@ -1,8 +1,8 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Interpreter
 
-The RubyJIT interpreter executes Ruby code expressed in our bytecode format.
+The Rhizome interpreter executes Ruby code expressed in our bytecode format.
 
 We use the interpreter for two purposes. First, we use it to gather information
 about how your program really behaves when it executes. This is information that
@@ -107,12 +107,12 @@ And has bytecode like this:
 Then this is the profiling information that we will gather:
 
 ```
-#<struct RubyJIT::Profile::SendProfile ip=6, receiver_kinds=#<Set: {:fixnum}>, args_kinds=[#<Set: {:fixnum}>]>
-#<struct RubyJIT::Profile::SendProfile ip=16, receiver_kinds=#<Set: {:fixnum}>, args_kinds=[#<Set: {:fixnum}>]>
-#<struct RubyJIT::Profile::SendProfile ip=17, receiver_kinds=#<Set: {Object}>, args_kinds=[#<Set: {:fixnum}>]>
-#<struct RubyJIT::Profile::SendProfile ip=21, receiver_kinds=#<Set: {:fixnum}>, args_kinds=[#<Set: {:fixnum}>]>
-#<struct RubyJIT::Profile::SendProfile ip=22, receiver_kinds=#<Set: {Object}>, args_kinds=[#<Set: {:fixnum}>]>
-#<struct RubyJIT::Profile::SendProfile ip=23, receiver_kinds=#<Set: {:fixnum}>, args_kinds=[#<Set: {:fixnum}>]>
+#<struct Rhizome::Profile::SendProfile ip=6, receiver_kinds=#<Set: {:fixnum}>, args_kinds=[#<Set: {:fixnum}>]>
+#<struct Rhizome::Profile::SendProfile ip=16, receiver_kinds=#<Set: {:fixnum}>, args_kinds=[#<Set: {:fixnum}>]>
+#<struct Rhizome::Profile::SendProfile ip=17, receiver_kinds=#<Set: {Object}>, args_kinds=[#<Set: {:fixnum}>]>
+#<struct Rhizome::Profile::SendProfile ip=21, receiver_kinds=#<Set: {:fixnum}>, args_kinds=[#<Set: {:fixnum}>]>
+#<struct Rhizome::Profile::SendProfile ip=22, receiver_kinds=#<Set: {Object}>, args_kinds=[#<Set: {:fixnum}>]>
+#<struct Rhizome::Profile::SendProfile ip=23, receiver_kinds=#<Set: {:fixnum}>, args_kinds=[#<Set: {:fixnum}>]>
 ```
 
 This tells us that, for example, the `send` instruction at instruction pointer

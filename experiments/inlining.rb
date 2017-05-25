@@ -21,51 +21,51 @@
 
 # Illustrates inlining core library methods.
 
-require_relative '../lib/rubyjit'
-require_relative '../spec/rubyjit/fixtures'
+require_relative '../lib/rhizomeruby'
+require_relative '../spec/rhizomeruby/fixtures'
 
-puts 'this experiment would draw graphs if you had Graphviz installed' unless RubyJIT::IR::Graphviz.available?
+puts 'this experiment would draw graphs if you had Graphviz installed' unless Rhizome::IR::Graphviz.available?
 
-interpreter = RubyJIT::Interpreter.new
-profile = RubyJIT::Profile.new
+interpreter = Rhizome::Interpreter.new
+profile = Rhizome::Profile.new
 
 100.times do
-  interpreter.interpret RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, RubyJIT::Fixtures, [14, 2], profile
+  interpreter.interpret Rhizome::Fixtures::ADD_BYTECODE_RHIZOME, Rhizome::Fixtures, [14, 2], profile
 end
 
-builder = RubyJIT::IR::Builder.new
-builder.build RubyJIT::Fixtures::ADD_BYTECODE_RUBYJIT, profile
+builder = Rhizome::IR::Builder.new
+builder.build Rhizome::Fixtures::ADD_BYTECODE_RHIZOME, profile
 graph = builder.graph
 
-passes_runner = RubyJIT::Passes::Runner.new(
-    RubyJIT::Passes::PostBuild.new,
-    RubyJIT::Passes::DeadCode.new,
-    RubyJIT::Passes::NoChoicePhis.new,
-    RubyJIT::Passes::InlineCaching.new
+passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Passes::PostBuild.new,
+    Rhizome::Passes::DeadCode.new,
+    Rhizome::Passes::NoChoicePhis.new,
+    Rhizome::Passes::InlineCaching.new
 )
 
 passes_runner.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'outer.pdf'
 
-  viz = RubyJIT::IR::Graphviz.new(RubyJIT::IR::Core.new.fixnum_op(:+, nil))
+  viz = Rhizome::IR::Graphviz.new(Rhizome::IR::Core.new.fixnum_op(:+, nil))
   viz.visualise 'inner.pdf'
 end
 
-inlining_pass = RubyJIT::Passes::Inlining.new
+inlining_pass = Rhizome::Passes::Inlining.new
 inlining_pass.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'inlined.pdf'
 end
 
-postbuild = RubyJIT::Passes::PostBuild.new
+postbuild = Rhizome::Passes::PostBuild.new
 postbuild.run graph
 
-if RubyJIT::IR::Graphviz.available?
-  viz = RubyJIT::IR::Graphviz.new(graph)
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'post.pdf'
 end

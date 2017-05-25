@@ -1,4 +1,4 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Graph visualisation
 
@@ -7,17 +7,17 @@ syntax trees - or they try to keep data structures as linear as possible, which
 is one property of the basic blocks in traditional bytecode and two- or
 three-address format intermediate representations. One advantage of this is that
 trees and linear data structures can be relatively easily pretty-printed as text
-for understanding and debugging the compiler. RubyJIT uses a graphical
+for understanding and debugging the compiler. Rhizome uses a graphical
 intermediate representation, which is not as easy to print out as text. The
-sea-of-nodes approach that RubyJIT uses means we have particularly complex
-graphs. RubyJIT therefore includes a tool to write out compiler graphs in a
+sea-of-nodes approach that Rhizome uses means we have particularly complex
+graphs. Rhizome therefore includes a tool to write out compiler graphs in a
 format for the [Graphviz graph visualisation program](http://www.graphviz.org).
 
 ### Why we need it
 
-RubyJIT's intermediate representation is a graph which is hard to print out as
+Rhizome's intermediate representation is a graph which is hard to print out as
 text in order to understand what the compiler is doing. In order to visualise
-RubyJIT's graphs, RubyJIT includes a tool to write the graph in a format which
+Rhizome's graphs, Rhizome includes a tool to write the graph in a format which
 you can use with the Graphviz graph visualisation program.
 
 Each node (oval) in the graph is a computation. Each edge (line) in the graph
@@ -106,5 +106,5 @@ visualiser called
 
 * Output graphs to the IGV API so that a graphical user interface can be used
   to navigate and re-arrange the graph.
-* Write an HMTL 5 interactive visualiser and have RubyJIT expose a web server
+* Write an HMTL 5 interactive visualiser and have Rhizome expose a web server
   to access it.

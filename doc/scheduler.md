@@ -1,8 +1,8 @@
-# RubyJIT
+# RhizomeRuby
 
 ## Scheduler
 
-The RubyJIT scheduler decides what order to run your program. You may think that
+The Rhizome scheduler decides what order to run your program. You may think that
 programs already have an order - the order in which they are written, but really
 there are many orders we could run your program and still provide the same
 result. The scheduler picks one order for you - hopefully one that is efficient.
