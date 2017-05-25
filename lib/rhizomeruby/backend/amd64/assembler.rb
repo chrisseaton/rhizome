@@ -107,9 +107,11 @@ module Rhizome
       class Assembler
 
         attr_reader :bytes
+        attr_reader :references
 
         def initialize
           @bytes = []
+          @references = []
         end
 
         # We won't comment on how the encoding works, as it isn't unique or
@@ -293,6 +295,10 @@ module Rhizome
 
         def patch(location, value)
           bytes[location...location+4] = [value].pack('l<').bytes
+        end
+
+        def reference(object)
+          @references.push object
         end
         
         private

@@ -229,6 +229,8 @@ module Rhizome
             @assembler.mov RBP, RSP
             @assembler.pop RBP
             @assembler.ret
+
+            @assembler.reference deopt.frame_state
           end
         end
 
