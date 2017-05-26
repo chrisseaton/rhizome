@@ -51,7 +51,7 @@ describe Rhizome::Passes::InlineCaching do
       before :each do
         receiver = Rhizome::IR::Node.new(:constant, 14)
         send = Rhizome::IR::Node.new(:send, name: :foo, argc: 0)
-        send.props[:profile] = Rhizome::Profile::SendProfile.new(0, Set.new([:k]), [])
+        send.props[:profile] = Rhizome::Profile::SendProfile.new(0, Set.new([:fixnum]), [])
         receiver.output_to :value, send, :receiver
         @graph.start.output_to :control, send
         send.output_to :control, @graph.finish
@@ -64,7 +64,7 @@ describe Rhizome::Passes::InlineCaching do
           if node.op == :send
             sends.push node
             expect(node.props[:name]).to eql :foo
-            expect(node.props[:megamorphic] || node.props[:kind] == :k).to be_truthy
+            expect(node.props[:megamorphic] || node.props[:kind] == :fixnum).to be_truthy
           end
         end
         expect(sends.size).to eql 2

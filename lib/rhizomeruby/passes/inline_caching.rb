@@ -52,6 +52,15 @@ module Rhizome
 
             if profile.receiver_kinds.size == 1
               kind = profile.receiver_kinds.first
+              
+              # Stop! We don't have any special code for calling a method that
+              # we don't have an IR instrinic for. We could perhaps lookup
+              # the method and then call that method directly, but we have to
+              # do that via a #send on the method... so we might we well just
+              # call the method as normal. So don't inline cache any kinds
+              # except fixnum, expecting to have intrinsics for our demos.
+              
+              next if kind != :fixnum
 
               # Create a new send that will our our monomorphic case. This
               # will call a specific method directly, not needing any method
