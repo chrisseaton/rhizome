@@ -19,6 +19,8 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+require 'set'
+
 module Rhizome
   module Backend
     module AMD64
@@ -39,6 +41,22 @@ module Rhizome
         # Generate code for a set of linearised basic blocks.
 
         def generate(blocks)
+          # Find out what registers will have arguments in them that we use and so need to be preserved during calls
+
+          arg_registers = Set.new
+
+          blocks.each do |block|
+            block.each do |insn|
+              case insn.first
+                when :self
+                  arg_registers.add source_for_arg(:self)
+                when :arg
+                  _, n, _ = insn
+                  arg_registers.add source_for_arg(n)
+              end
+            end
+          end
+
           # Look for the highest stack slot used to see how much stack space we need to reserve.
 
           max_slot = 0
@@ -56,7 +74,7 @@ module Rhizome
 
           stack_space = max_slot + 8
           
-          #stack_space += stack_space % 16
+          stack_space += stack_space % 16
 
           # Standard AMD64 function prelude - preserve the caller's rbp and create our stack space.
 
@@ -94,18 +112,10 @@ module Rhizome
               case insn.first
                 when :self
                   _, dest = insn
-                  @assembler.mov RDI, operand(dest)
+                  @assembler.mov source_for_arg(:self), operand(dest)
                 when :arg
                   _, n, dest = insn
-                  case n
-                    when 0
-                      source = RSI
-                    when 1
-                      source = RDX
-                    else
-                      raise n.to_s
-                  end
-                  @assembler.mov source, operand(dest)
+                  @assembler.mov source_for_arg(n), operand(dest)
                 when :constant
                   _, value, dest = insn
                   # TODO we should differentiate clearly between untagged constant numbers and object constants
@@ -186,6 +196,10 @@ module Rhizome
                   end
                 when :call_managed
                   _, receiver, name, *args, target = insn
+                  preserve = arg_registers.union([RDI, RSI])
+                  preserve.each do |r|
+                    @assembler.push r
+                  end
                   args.reverse.each do |arg|
                     @assembler.mov operand(arg), RAX
                     @assembler.push RAX
@@ -201,6 +215,9 @@ module Rhizome
                   @assembler.mov RAX, operand(target)
                   (args.size + 2).times do
                     @assembler.pop RAX
+                  end
+                  preserve.to_a.reverse.each do |r|
+                    @assembler.pop r
                   end
                 when :return
                   _, source = insn
@@ -241,6 +258,14 @@ module Rhizome
             RBP - bar.to_s[1..-1].to_i
           else
             raise
+          end
+        end
+
+        def source_for_arg(n)
+          if n == :self
+            RDI
+          else
+            [RSI, RDX].fetch(n)
           end
         end
 
