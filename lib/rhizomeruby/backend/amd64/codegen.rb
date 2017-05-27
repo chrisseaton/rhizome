@@ -72,16 +72,18 @@ module Rhizome
             end
           end
 
-          stack_space = max_slot + 8
-          
-          stack_space += stack_space % 16
+          space_needed = max_slot + 8
+
+          # Frame sizes need to be aligned to 16 bytes.
+
+          frame_size = space_needed + space_needed % 16
 
           # Standard AMD64 function prelude - preserve the caller's rbp and create our stack space.
 
           @assembler.push RBP
           @assembler.mov RSP, RBP
 
-          @assembler.mov Value.new(stack_space), RAX
+          @assembler.mov Value.new(frame_size), RAX
           @assembler.sub RAX, RSP
 
           # Create labels for all basic blocks.
@@ -196,26 +198,54 @@ module Rhizome
                   end
                 when :call_managed
                   _, receiver, name, *args, target = insn
+
                   preserve = arg_registers.union([RDI, RSI])
+
+                  # The frame still has to be aligned on 16 bytes when we make the call so do we just push an extra
+                  # dummy value if there aren't enough values to have it aligned naturally? The basic frame is already
+                  # aligned on 16 bytes.
+
+                  receiver_and_name = 2
+                  to_push = preserve.size + args.size + receiver_and_name
+                  @assembler.push RAX if to_push % 2 == 1
+
+                  # Preserve registers that we'll overwrite
+
                   preserve.each do |r|
                     @assembler.push r
                   end
+
                   args.reverse.each do |arg|
                     @assembler.mov operand(arg), RAX
                     @assembler.push RAX
                   end
+
+                  # Push the method name and the receiver.
+
                   @assembler.mov operand(name), RAX
                   @assembler.push RAX
                   @assembler.mov operand(receiver), RAX
                   @assembler.push RAX
+
+                  # The first argument is then the current stack pointer, and the second is the number of arguments.
+
                   @assembler.mov RSP, RDI
                   @assembler.mov Value.new(args.size), RSI
+
+                  # Call into managed.
+
                   @assembler.mov Value.new(@interface.call_managed_address), RAX
                   @assembler.call Indirection.new(RAX)
                   @assembler.mov RAX, operand(target)
+
+                  # Pop args back off.
+
                   (args.size + 2).times do
                     @assembler.pop RAX
                   end
+
+                  # Restore registers that we rpreserved
+
                   preserve.to_a.reverse.each do |r|
                     @assembler.pop r
                   end
