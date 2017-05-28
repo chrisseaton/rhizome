@@ -127,6 +127,16 @@ module Rhizome
         outputs.edges.dup.each(&:remove)
       end
 
+      # Remove a node but create a new edge around it for control
+      # flow.
+
+      def remove_from_control_flow
+        before = inputs.with_input_name(:control).from_node
+        after = outputs.with_input_name(:control).to_node
+        before.output_to :control, after
+        remove
+      end
+
       # Replace this node with a subgraph of new nodes. Allows the caller to
       # specify the start and finish nodes for control, and then separately
       # any number of nodes which should become users of the data inputs to
@@ -158,6 +168,24 @@ module Rhizome
 
         existing_start.remove
         existing_finish.remove if existing_finish != existing_start
+      end
+
+      # Like replace, but only reconnects users to the new node.
+
+      def use_instead(other)
+        outputs.edges.each do |user|
+          other.output_to user.output_name, user.to, user.input_name
+        end
+        remove
+      end
+
+      # Get an array the describes the identity of the value. Two nodes that
+      # perform the same computation with the inputs that also have the
+      # same identity will return an array that is equal and has the same
+      # hash code.
+
+      def value_identity
+        [op, props, inputs.value_identity]
       end
 
     end
@@ -225,6 +253,12 @@ module Rhizome
       def remove
         from.outputs.edges.delete self
         to.inputs.edges.delete self
+      end
+
+      # See Node#value_identity
+
+      def value_identity
+        [from.value_identity, output_name, input_name]
       end
 
     end
@@ -314,6 +348,12 @@ module Rhizome
 
       def size
         edges.size
+      end
+
+      # See Node#value_identity
+
+      def value_identity
+        edges.sort_by { |e| [e.output_name, e.input_name] }.map { |e| e.value_identity }
       end
 
     end

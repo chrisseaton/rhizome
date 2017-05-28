@@ -22,21 +22,44 @@
 module Rhizome
   module Passes
 
-    # A pass to replace parts of the graph with a canonical representation so
-    # that other phases can look for just that representation.
+    # A pass to perform global-value-numbering in order to eliminate constant
+    # sub-expressions, replacing multiple nodes that compute the same value
+    # with just one of the nodes.
 
-    class Canonicalise
+    class GlobalValueNumbering
 
       def run(graph)
         modified = false
 
-        # Look at each node.
+        # We'll cache the value identity of nodes because it could be expensive
+        # to compute.
 
-        graph.all_nodes.each do |n|
-          # Replace not(int64_not_zero?) with int64_zero?
+        value_identities = {}
 
-          if n.op == :not && n.inputs.from_node.op == :int64_not_zero?
-            IR::Node.replace_multiple n.inputs.from_node, n, IR::Node.new(:int64_zero?)
+        # Store a single node for each value identity.
+
+        canonical = {}
+
+        # We'll be modifying the graph quite a bit so work on a single copy of
+        # value nodes.
+
+        value_nodes = graph.all_nodes.reject(&:has_control_output?)
+
+        # Cache value identities of nodes and find a canonical node for each value.
+
+        value_nodes.each do |n|
+          value_identity = n.value_identity
+          value_identities[n] = value_identity
+          canonical[value_identity] = n
+        end
+
+        # Replace nodes with the canonical versions if they aren't it.
+
+        value_nodes.each do |n|
+          c = canonical[value_identities[n]]
+          if c != n
+            n.use_instead c
+            modified = true
           end
         end
 

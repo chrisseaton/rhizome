@@ -19,10 +19,14 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+require 'set'
+
 module Rhizome
   module Passes
 
     # An optimisation pass to remove dead code.
+
+    HAS_SIDE_EFFECTS = [:start, :finish, :trace, :send, :call_managed, :guard, :branch, :merge]
 
     class DeadCode
 
@@ -40,6 +44,26 @@ module Rhizome
           if n.outputs.empty? && n.op != :finish
             n.remove
             modified = true
+            next
+          end
+
+          # If a node has no users, except for control flow, and it has no side
+          # effects, then it is dead, but we need to keep the control flow path
+          # through it. We sometimes get nodes like this hanging around after other
+          # transformations.
+
+          if n.outputs.edges.all?(&:control?) && !HAS_SIDE_EFFECTS.include?(n.op)
+            n.inputs.from_nodes.each do |a|
+              n.outputs.edges.each do |b|
+                if b.control? && !a.outputs.with_output_name(:control).to_nodes.include?(b.to)
+                  a.output_to :control, b.to
+                end
+              end
+            end
+
+            n.remove
+            modified = true
+            next
           end
         end
 

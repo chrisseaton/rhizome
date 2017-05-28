@@ -43,6 +43,15 @@ node. We also replace `kind_is?` nodes that look for a `fixnum` with a
 We discuss overflow in a later document, so it isn't handled by the `int64_add`
 at this stage.
 
+### Eliminate redundant tagging
+
+Our process to add tagging may introduce redundant tagging. For example in the
+expression `a + b + c`, the first `+` will tag its result only for the second to
+untag it. This redundant tagging operations are removed as part of the constant
+folding pass described in another document - it constant folds to the original
+value. A `tag_fixnum` followed by a `is_tagged_fixnum?` is also constant folded
+to a `true` constant value.
+
 ### Expand tagging
 
 The tagging operations were made explicit by the previous pass, but they still

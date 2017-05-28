@@ -56,6 +56,10 @@ module Rhizome
       end
       n
     end
+    
+    def self.redundant_multiply(x)
+      x * x + x * x
+    end
 
     ADD_BYTECODE_MRI = <<END
 local table (size: 2, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
@@ -152,6 +156,22 @@ local table (size: 3, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1,
 0046 getlocal_OP__WC__0 3
 0048 trace            16                                              (  58)
 0050 leave                                                            (  57)
+CODE
+
+    REDUNDANT_MULTIPLY_BYTECODE_MRI = <<CODE
+local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 1] x<Arg>     
+0000 trace            8                                               (  60)
+0002 trace            1                                               (  61)
+0004 getlocal_OP__WC__0 3
+0006 getlocal_OP__WC__0 3
+0008 opt_mult         <callinfo!mid:*, argc:1, ARGS_SIMPLE>, <callcache>
+0011 getlocal_OP__WC__0 3
+0013 getlocal_OP__WC__0 3
+0015 opt_mult         <callinfo!mid:*, argc:1, ARGS_SIMPLE>, <callcache>
+0018 opt_plus         <callinfo!mid:+, argc:1, ARGS_SIMPLE>, <callcache>
+0021 trace            16                                              (  62)
+0023 leave                                                            (  61)
 CODE
 
     ADD_BYTECODE_RBX = <<END
@@ -329,6 +349,22 @@ END
         [:trace,    57      ],
         [:load,     :n      ],
         [:trace,    58      ],
+        [:return            ]
+    ]
+
+    REDUNDANT_MULTIPLY_BYTECODE_RHIZOME = [
+        [:arg,      0       ],
+        [:store,    :x      ],
+        [:trace,    60      ],
+        [:trace,    61      ],
+        [:load,     :x      ],
+        [:load,     :x      ],
+        [:send,     :*,   1 ],
+        [:load,     :x      ],
+        [:load,     :x      ],
+        [:send,     :*,   1 ],
+        [:send,     :+,   1 ],
+        [:trace,    62      ],
         [:return            ]
     ]
 

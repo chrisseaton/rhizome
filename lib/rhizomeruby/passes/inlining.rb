@@ -50,6 +50,8 @@ module Rhizome
                 inlined = @core.fixnum_op(:+, send.props[:profile])
               when [:fixnum, :-]
                 inlined = @core.fixnum_op(:-, send.props[:profile])
+              when [:fixnum, :*]
+                inlined = @core.fixnum_op(:*, send.props[:profile])
 
               # Otherwise this isn't a send that we can inline.
 

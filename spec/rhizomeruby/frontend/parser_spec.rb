@@ -49,6 +49,10 @@ describe Rhizome::Frontend::MRIParser do
         expect(@parser.text_for(Rhizome::Fixtures.method(:named_compare))).to be == Rhizome::Fixtures::NAMED_COMPARE_BYTECODE_MRI
       end
 
+      it 'returns the text for the bytecode for a redundant multiply method' do
+        expect(@parser.text_for(Rhizome::Fixtures.method(:redundant_multiply))).to be == Rhizome::Fixtures::REDUNDANT_MULTIPLY_BYTECODE_MRI
+      end
+
     end
 
   end
@@ -69,6 +73,10 @@ describe Rhizome::Frontend::MRIParser do
 
     it 'parses the text for a compare method with local variables' do
       expect(@parser.parse(Rhizome::Fixtures::NAMED_COMPARE_BYTECODE_MRI)).to be == Rhizome::Fixtures::NAMED_COMPARE_BYTECODE_RHIZOME
+    end
+
+    it 'parses the text for a redundant multiply method' do
+      expect(@parser.parse(Rhizome::Fixtures::REDUNDANT_MULTIPLY_BYTECODE_MRI)).to be == Rhizome::Fixtures::REDUNDANT_MULTIPLY_BYTECODE_RHIZOME
     end
 
   end

@@ -22,22 +22,34 @@
 module Rhizome
   module Passes
 
-    # A pass to replace parts of the graph with a canonical representation so
-    # that other phases can look for just that representation.
+    # A pass to calculate the value of nodes where the value of all inputs
+    # are known.
 
-    class Canonicalise
+    class ConstantFold
 
       def run(graph)
         modified = false
 
-        # Look at each node.
-
         graph.all_nodes.each do |n|
-          # Replace not(int64_not_zero?) with int64_zero?
-
-          if n.op == :not && n.inputs.from_node.op == :int64_not_zero?
-            IR::Node.replace_multiple n.inputs.from_node, n, IR::Node.new(:int64_zero?)
+          case n.op
+            when :untag_fixnum
+              untag_input = n.inputs.with_input_name(:value).from_node
+              if untag_input.op == :tag_fixnum
+                # Replace tag(untag(value)) with just value.
+                tag_input = untag_input.inputs.with_input_name(:value).from_node
+                n.use_instead tag_input
+                modified = true
+              end
+            when :is_tagged_fixnum?
+              is_tagged_input = n.inputs.with_input_name(:value).from_node
+              if is_tagged_input.op == :tag_fixnum
+                # Replace is_tagged?(tag(value)) with just true.
+                n.use_instead IR::Node.new(:constant, value: true)
+                modified = true
+              end
           end
+
+          break if modified
         end
 
         modified

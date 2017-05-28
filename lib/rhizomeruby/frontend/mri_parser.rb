@@ -78,7 +78,7 @@ module Rhizome
               insns.push [:push, $2.to_i]
             when /(\d+)\s+putobject_OP_INT2FIX_O_(\d+)_C_/
               insns.push [:push, $2.to_i]
-            when /(\d+)\s+\w+\s+<callinfo\!mid:([+\-<>\w]+), argc:(\d+), (FCALL\|)?ARGS_SIMPLE>, <callcache>/
+            when /(\d+)\s+\w+\s+<callinfo\!mid:([+\-<>*\w]+), argc:(\d+), (FCALL\|)?ARGS_SIMPLE>, <callcache>/
               insns.push [:send, $2.to_sym, $3.to_i]
             when /(\d+)\s+jump\s+(\d+)/
               insns.push [:jump, $2.to_i]
