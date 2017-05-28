@@ -105,6 +105,26 @@ themselves, just by looking at what the inputs are doing. For example an
 replaced with a `true` value. The result of `tag_fixnum` isn't a constant, but
 the property that we care about - that it is a tagged fixnum - is constant.
 
+#### Re-float nodes
+
+When we inline method sends we always feed the control-flow path from where the
+send was into the body of the method, and out of it to where the return was, as
+we don't look at whether the body of the method has any side effects or not. It
+also have side effects to start with, and these can be removed later through for
+example removal of redundant guards.
+
+This can leave us with nodes that don't have any side effects, such as basic
+arithmetic operations, being fixed in control flow. That then prevents other
+optimisations apply to them, such as global value numbering.
+
+For example, in the redundant multiply example after method send inlining we are
+left with two `fixnum_mul` nodes. These have the same inputs so would hope that
+they would be unified into one. However they have different control-flow inputs,
+which makes them appear to be different.
+
+The re-float pass finds nodes such as these - nodes that are fixed but don't
+have side effects - and removes them by re-routing control-flow around them. 
+
 #### The pass runner
 
 When an optimisation pass runs it may create new nodes which could be further

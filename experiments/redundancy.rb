@@ -94,6 +94,7 @@ if Rhizome::IR::Graphviz.available?
 end
 
 passes_runner = Rhizome::Passes::Runner.new(
+    Rhizome::Passes::Refloat.new,
     Rhizome::Passes::GlobalValueNumbering.new
 )
 

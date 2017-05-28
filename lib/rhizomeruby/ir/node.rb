@@ -72,6 +72,12 @@ module Rhizome
         end
       end
 
+      # Does this node have side effects?
+
+      def has_side_effects?
+        [:start, :finish, :trace, :send, :call_managed, :guard, :branch, :merge].include?(op)
+      end
+
       # Does this node have any inputs?
 
       def has_input?
