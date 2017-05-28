@@ -435,7 +435,7 @@ module Rhizome
             end
 
             # Send instructions and lowered equivalents need the arguments.
-            if [:send, :call_managed, :int64_add, :int64_and, :int64_shift_left, :int64_shift_right].include?(node.op)
+            if [:send, :call_managed, :int64_add, :int64_sub, :int64_mul, :int64_and, :int64_shift_left, :int64_shift_right].include?(node.op)
               insn.push node.inputs.with_input_name(:receiver).from_nodes.first.props[:register]
 
               if node.op == :send

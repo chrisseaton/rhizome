@@ -143,6 +143,23 @@ describe Rhizome::Backend::AMD64::Assembler do
 
   end
 
+  describe '#imul' do
+
+    it 'correctly assembles' do
+      @assembler.imul Rhizome::Backend::AMD64::RAX, Rhizome::Backend::AMD64::RCX
+      expect(@assembler.bytes).to eql [0x48, 0x0f, 0xaf, 0xc8]
+    end
+
+    it 'handles all low registers' do
+      Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r1|
+        Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r2|
+          @assembler.imul r1, r2
+        end
+      end
+    end
+
+  end
+
   describe '#and' do
 
     it 'correctly assembles' do

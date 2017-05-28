@@ -191,6 +191,16 @@ module Rhizome
           end
         end
 
+        def imul(source, dest)
+          if source.is_a?(Register) && dest.is_a?(Register)
+            raise if source.encoding >= 8
+            raise if dest.encoding >= 8
+            emit REXW, 0x0f, 0xaf, 0b11000000 | (dest.encoding << 3) | source.encoding
+          else
+            raise
+          end
+        end
+
         def and(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
             raise if source.encoding >= 8

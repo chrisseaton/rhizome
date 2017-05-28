@@ -127,6 +127,16 @@ describe Rhizome::Backend::AMD64::Disassembler do
 
       end
 
+      describe 'imul' do
+
+        it 'register to register' do
+          @assembler.imul Rhizome::Backend::AMD64::RAX, Rhizome::Backend::AMD64::RCX
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  imul %rax %rcx                ; 48 0f af c8'
+        end
+
+      end
+
       describe 'and' do
 
         it 'register to register' do

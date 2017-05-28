@@ -103,3 +103,45 @@ if Rhizome::IR::Graphviz.available?
   viz = Rhizome::IR::Graphviz.new(graph)
   viz.visualise 'low-after.pdf'
 end
+
+scheduler = Rhizome::Scheduler.new
+scheduler.schedule graph
+
+register_allocator = Rhizome::RegisterAllocator.new
+register_allocator.allocate_infinite_stack graph
+
+blocks = scheduler.linearize(graph)
+
+blocks.each_with_index do |block, n|
+  puts "block#{n}:" unless n == 0
+
+  block.each do |insn|
+    puts "  #{insn.map(&:to_s).join(' ')}"
+  end
+end
+
+handles = Rhizome::Handles.new
+interface = Rhizome::Interface.new(handles)
+assembler = Rhizome::Backend::AMD64::Assembler.new(handles)
+
+codegen = Rhizome::Backend::AMD64::Codegen.new(assembler, handles, interface)
+codegen.generate blocks
+
+machine_code = assembler.bytes
+
+disassembler = Rhizome::Backend::AMD64::Disassembler.new(machine_code)
+
+while disassembler.more?
+  puts disassembler.next
+end
+
+memory = Rhizome::Memory.new(machine_code.size)
+memory.write 0, machine_code
+memory.executable = true
+native_method = memory.to_proc([:long, :long], :long)
+
+puts "Installed code to 0x#{memory.address.to_i.to_s(16)}"
+puts
+puts 'redundant_multiply(14) = ' + interface.call_native(native_method, Rhizome::Fixtures, 14).to_s
+
+# We turned off frame states for simplicity - don't try to use the slow path

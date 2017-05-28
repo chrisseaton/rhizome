@@ -72,19 +72,26 @@ module Rhizome
             target = @start + 5 + offset
             insn = "jmp #{offset} (0x#{target.to_s(16).rjust(16, '0')})"
           elsif byte == 0x0f
-            name = case shift & ~0x80
-                     when EQUAL;         'e'
-                     when NOT_EQUAL;     'ne'
-                     when LESS;          'lt'
-                     when LESS_EQUALS;   'le'
-                     when GREATER;       'gt'
-                     when GREATER_EQUAL; 'ge'
-                     when OVERFLOW;      'o'
-                     else;                raise
-                   end
-            offset = shift_sint32
-            target = @start + 6 + offset
-            insn = "j#{name} #{offset} (0x#{target.to_s(16).rjust(16, '0')})"
+            byte = shift
+            if byte == 0xaf
+              raise unless prefix == REXW
+              byte = shift
+              insn = "imul #{register(byte & 0x7)} #{register((byte >> 3) & 0x7)}"
+            else
+              name = case byte & ~0x80
+                       when EQUAL;         'e'
+                       when NOT_EQUAL;     'ne'
+                       when LESS;          'lt'
+                       when LESS_EQUALS;   'le'
+                       when GREATER;       'gt'
+                       when GREATER_EQUAL; 'ge'
+                       when OVERFLOW;      'o'
+                       else;                raise
+                     end
+              offset = shift_sint32
+              target = @start + 6 + offset
+              insn = "j#{name} #{offset} (0x#{target.to_s(16).rjust(16, '0')})"
+            end
           elsif byte & 0xf8 == 0x50
             insn = "push #{register(prefix, byte & 0x7)}"
           elsif byte & 0xf8 == 0x58

@@ -134,6 +134,12 @@ module Rhizome
                   @assembler.mov operand(b), RCX
                   @assembler.add RCX, RAX
                   @assembler.mov RAX, operand(dest)
+                when :int64_mul
+                  _, a, b, dest = insn
+                  @assembler.mov operand(a), RAX
+                  @assembler.mov operand(b), RCX
+                  @assembler.imul RCX, RAX
+                  @assembler.mov RAX, operand(dest)
                 when :int64_and
                   _, a, b, dest = insn
                   @assembler.mov operand(a), RAX

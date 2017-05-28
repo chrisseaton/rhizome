@@ -119,8 +119,6 @@ memory.write 0, machine_code
 memory.executable = true
 native_method = memory.to_proc([:long, :long, :long], :long)
 
-puts "Installed code to 0x#{interface.continue_in_interpreter_address.to_s(16)}"
-
 puts "Installed code to 0x#{memory.address.to_i.to_s(16)}"
 puts
 puts 'Using the fast path:'
