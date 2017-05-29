@@ -41,14 +41,14 @@ module Rhizome
             # remove control-flow edges passing through this node.
 
             after = n.outputs.with_output_name(:control).to_node
-            n.inputs.edges.each do |i|
+            n.inputs.edges.dup.each do |i|
               if i.control?
                 i.remove
                 i.from.output_to i.output_name, after, i.input_name
               end
             end
 
-            n.outputs.edges.each do |o|
+            n.outputs.edges.dup.each do |o|
               if o.control?
                 o.remove
               end
