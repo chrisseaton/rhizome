@@ -228,23 +228,27 @@ module Rhizome
 
                   @assembler.mov Value.new(@interface.call_managed_address), SCRATCH_REGISTERS[0]
                   @assembler.call Indirection.new(SCRATCH_REGISTERS[0])
-                  @assembler.mov RAX, operand(target)
 
                   # Pop args back off.
 
                   (args.size + 2).times do
-                    @assembler.pop SCRATCH_REGISTERS[0]
+                    raise if SCRATCH_REGISTERS[1] == RAX
+                    @assembler.pop SCRATCH_REGISTERS[1]
                   end
 
                   # Restore registers that we preserved
 
                   if new_frame_size % 2 == 1
-                    @assembler.pop SCRATCH_REGISTERS[0]
+                    raise if SCRATCH_REGISTERS[1] == RAX
+                    @assembler.pop SCRATCH_REGISTERS[1]
                   end
 
                   CALLER_SAVED.reverse.each do |r|
+                    raise if r == RAX
                     @assembler.pop r
                   end
+
+                  @assembler.mov RAX, operand(target)
                 when :return
                   _, source = insn
 
