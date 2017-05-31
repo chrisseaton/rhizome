@@ -207,6 +207,17 @@ In this example we're still showing the high level operations such as `send` and
 `phi` operations. The normal use of the linearizer is to lower to machine-level
 operations before linearization.
 
+### Other things we could be considering
+
+The scheduler interacts closely with the register allocation, which is described
+in another document. If nodes that produce a value are scheduled earlier than
+needed before the nodes that use them, the value needs to kept alive in a
+register by the register allocator for longer. If too many values are kept alive
+at the same time the register allocator can run out of registers and it will
+start to use slower main memory instead. The scheduler could be thinking ahead
+to register allocation, and minimising the time the values need to be kept
+alive.
+
 ### More technical details
 
 Less seems to be written about scheduling than even the rest of compilers. We
@@ -235,3 +246,5 @@ any compilers.
   graph depth-first. Processors normally predict forward branches to be not
   taken if they have no other information, so we should try to match that
   expectation.
+* Try to minimise how long values are kept alive to improve the results from
+  the later register allocation phase.
