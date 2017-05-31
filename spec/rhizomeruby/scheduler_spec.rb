@@ -150,7 +150,7 @@ describe Rhizome::Scheduler do
       @passes_runner.run @graph
       @scheduler.schedule @graph
       @register_allocator = Rhizome::RegisterAllocator.new
-      @register_allocator.allocate_infinite @graph
+      @register_allocator.allocate @graph
       @blocks = @scheduler.linearize(@graph)
     end
 

@@ -105,6 +105,24 @@ describe Rhizome::Backend::AMD64::Disassembler do
           expect(@disassembler.next).to eql '0x0000000000000000  mov %rsp %rbp-0xa             ; 48 89 65 f6'
         end
 
+        it 'high register to high register' do
+          @assembler.mov Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  mov %r13 %r14                 ; 4d 89 ee'
+        end
+
+        it 'high register to address' do
+          @assembler.mov Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::RBP + 10
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  mov %r13 %rbp+0xa             ; 4c 89 6d 0a'
+        end
+
+        it 'address to high register' do
+          @assembler.mov Rhizome::Backend::AMD64::RBP + 10, Rhizome::Backend::AMD64::R13
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  mov %rbp+0xa %r13             ; 4c 8b 6d 0a'
+        end
+
       end
 
       describe 'add' do
@@ -113,6 +131,12 @@ describe Rhizome::Backend::AMD64::Disassembler do
           @assembler.add Rhizome::Backend::AMD64::RSP, Rhizome::Backend::AMD64::RBP
           @disassemble.call
           expect(@disassembler.next).to eql '0x0000000000000000  add %rsp %rbp                 ; 48 01 e5'
+        end
+
+        it 'high register to high register' do
+          @assembler.add Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  add %r13 %r14                 ; 4d 01 ee'
         end
 
       end
@@ -125,6 +149,12 @@ describe Rhizome::Backend::AMD64::Disassembler do
           expect(@disassembler.next).to eql '0x0000000000000000  sub %rsp %rbp                 ; 48 29 e5'
         end
 
+        it 'high register to high register' do
+          @assembler.sub Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  sub %r13 %r14                 ; 4d 29 ee'
+        end
+
       end
 
       describe 'imul' do
@@ -133,6 +163,12 @@ describe Rhizome::Backend::AMD64::Disassembler do
           @assembler.imul Rhizome::Backend::AMD64::RAX, Rhizome::Backend::AMD64::RCX
           @disassemble.call
           expect(@disassembler.next).to eql '0x0000000000000000  imul %rax %rcx                ; 48 0f af c8'
+        end
+
+        it 'high register to high register' do
+          @assembler.imul Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  imul %r13 %r14                ; 4d 0f af f5'
         end
 
       end
@@ -145,24 +181,60 @@ describe Rhizome::Backend::AMD64::Disassembler do
           expect(@disassembler.next).to eql '0x0000000000000000  and %rsp %rbp                 ; 48 21 e5'
         end
 
+        it 'high register to high register' do
+          @assembler.and Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  and %r13 %r14                 ; 4d 21 ee'
+        end
+
       end
 
-      it 'shr' do
-        @assembler.shr Rhizome::Backend::AMD64::RCX, Rhizome::Backend::AMD64::RAX
-        @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  shr %cl %rax                  ; 48 d3 e8'
+      describe 'shr' do
+
+        it 'register to register' do
+          @assembler.shr Rhizome::Backend::AMD64::RCX, Rhizome::Backend::AMD64::RAX
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  shr %cl %rax                  ; 48 d3 e8'
+        end
+
+        it 'register to high register' do
+          @assembler.shr Rhizome::Backend::AMD64::RCX, Rhizome::Backend::AMD64::R13
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  shr %cl %r13                  ; 49 d3 ed'
+        end
+
       end
 
-      it 'shl' do
-        @assembler.shl Rhizome::Backend::AMD64::RCX, Rhizome::Backend::AMD64::RAX
-        @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  shl %cl %rax                  ; 48 d3 e0'
+      describe 'shl' do
+
+        it 'register to register' do
+          @assembler.shl Rhizome::Backend::AMD64::RCX, Rhizome::Backend::AMD64::RAX
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  shl %cl %rax                  ; 48 d3 e0'
+        end
+
+        it 'register to high register' do
+          @assembler.shl Rhizome::Backend::AMD64::RCX, Rhizome::Backend::AMD64::R13
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  shl %cl %r13                  ; 49 d3 e5'
+        end
+
       end
 
-      it 'cmp' do
-        @assembler.cmp Rhizome::Backend::AMD64::RAX, Rhizome::Backend::AMD64::RCX
-        @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  cmp %rax %rcx                 ; 48 39 c1'
+      describe 'cmp' do
+
+        it 'register to register' do
+          @assembler.cmp Rhizome::Backend::AMD64::RAX, Rhizome::Backend::AMD64::RCX
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  cmp %rax %rcx                 ; 48 39 c1'
+        end
+
+        it 'high register to high register' do
+          @assembler.cmp Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  cmp %r13 %r14                 ; 4d 39 ee'
+        end
+
       end
 
       it 'jmp with a backward jump' do

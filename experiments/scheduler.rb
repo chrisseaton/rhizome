@@ -63,7 +63,7 @@ if Rhizome::IR::Graphviz.available?
 end
 
 register_allocator = Rhizome::RegisterAllocator.new
-register_allocator.allocate_infinite graph
+register_allocator.allocate graph
 
 blocks = scheduler.linearize(graph)
 

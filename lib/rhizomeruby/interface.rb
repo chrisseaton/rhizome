@@ -68,9 +68,6 @@ module Rhizome
     # Continue in the intepreter (called from native).
 
     def continue_in_interpreter(frame_pointer, stack_pointer, frame_state_handle)
-      # The stack pointer we're passed is off by one because it was before the call.
-      stack_pointer -= Config::WORD_BYTES
-      
       # Get the frame as a map of stack values as the graph describes them.
 
       frame_size = frame_pointer - stack_pointer
@@ -78,16 +75,22 @@ module Rhizome
       frame_words = frame_memory.read_words(0, frame_size / Config::WORD_BYTES)
       frame_words.reverse!
 
-      frame_values = Hash[frame_words.each_with_index.map { |word, n|
-        [:"s#{(n + 1) * 8}", word]
-      }]
-      
+      # The top word is the return address - forget about it for now.
+      # We could use this to look up the frame state though, instead
+      # of passing a handle.
+
+      frame_words.pop
+
+      raise unless frame_words.size == Backend::AMD64::USER_REGISTERS.size
+
+      frame_values = Backend::AMD64::USER_REGISTERS.map { |r| r.name.to_s.downcase.to_sym }.zip(frame_words).to_h
+
       # Get the frame state as a Ruby object.
 
       frame_state = @handles.from_native(frame_state_handle)
       
-      # Get the receier, arguments, stack, and locals, from the frame.
-      
+      # Get the receiver, arguments, stack, and locals, from the frame.
+
       receiver = @handles.from_native(frame_values[frame_state.receiver])
 
       args = frame_state.args.map do |arg|

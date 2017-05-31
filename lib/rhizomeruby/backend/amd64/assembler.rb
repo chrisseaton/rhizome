@@ -50,6 +50,14 @@ module Rhizome
           end
         end
 
+        def to_s
+          name
+        end
+
+        def inspect
+          name
+        end
+
       end
 
       # A combination of a base register and an offset.
@@ -79,9 +87,11 @@ module Rhizome
         const_set r.name, r
       end
 
-      # For testing purposes, list those that are simpler to encode.
-
-      LOW_REGISTERS = REGISTERS.select { |r| r.encoding < 8 }
+      USER_REGISTERS = [RDX, RSI, RDI, R8, R9, R10, R11, RBX, R12, R13, R14, R15]
+      SCRATCH_REGISTERS = [RAX, RCX]
+      CALLER_SAVED = [RDX, RSI, RDI, R8, R9, R10, R11]
+      CALLEE_SAVED = [RBP, RBX, R12, R13, R14, R15]
+      ARGUMENT_REGISTERS = [RDI, RSI, RDX, RCX, R8, R9]
 
       # Prefixes are part of the AMD64 encoding system.
 
@@ -137,25 +147,16 @@ module Rhizome
           end
 
           if source.is_a?(Register) && dest.is_a?(Register)
-            raise if source.encoding >= 8
-            raise if dest.encoding >= 8
-            emit REXW, 0x89, 0b11000000 | (source.encoding << 3) | dest.encoding
+            encoded = prefix_and_encode_register(source, dest)
+            emit 0x89, 0b11000000 | encoded
           elsif source.is_a?(Address) && dest.is_a?(Register)
-            raise if source.base.encoding >= 8
-            raise if dest.encoding >= 8
-            if source.offset >= -127 || source.offset <= 128
-              emit REXW, 0x8b, 0b01000000 | (dest.encoding << 3) | source.base.encoding, source.offset
-            else
-              raise
-            end
+            encoded = prefix_and_encode_register(dest, source.base)
+            raise unless source.offset >= -127 && source.offset <= 128
+            emit 0x8b, 0b01000000 | encoded, source.offset
           elsif source.is_a?(Register) && dest.is_a?(Address)
-            raise if source.encoding >= 8
-            raise if dest.base.encoding >= 8
-            if dest.offset >= -127 || dest.offset <= 128
-              emit REXW, 0x89, 0b01000000 | (source.encoding << 3) | dest.base.encoding, dest.offset
-            else
-              raise
-            end
+            encoded = prefix_and_encode_register(source, dest.base)
+            raise unless dest.offset >= -127 && dest.offset <= 128
+            emit 0x89, 0b01000000 | encoded, dest.offset
           elsif source.is_a?(Value) && dest.is_a?(Register)
             raise if dest.encoding >= 8
             if source.value >= -2147483648 && source.value <= 2147483647
@@ -173,9 +174,8 @@ module Rhizome
 
         def add(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
-            raise if source.encoding >= 8
-            raise if dest.encoding >= 8
-            emit REXW, 0x01, 0b11000000 | (source.encoding << 3) | dest.encoding
+            encoded = prefix_and_encode_register(source, dest)
+            emit 0x01, 0b11000000 | encoded
           else
             raise
           end
@@ -183,9 +183,8 @@ module Rhizome
 
         def sub(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
-            raise if source.encoding >= 8
-            raise if dest.encoding >= 8
-            emit REXW, 0x29, 0b11000000 | (source.encoding << 3) | dest.encoding
+            encoded = prefix_and_encode_register(source, dest)
+            emit 0x29, 0b11000000 | encoded
           else
             raise
           end
@@ -193,9 +192,8 @@ module Rhizome
 
         def imul(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
-            raise if source.encoding >= 8
-            raise if dest.encoding >= 8
-            emit REXW, 0x0f, 0xaf, 0b11000000 | (dest.encoding << 3) | source.encoding
+            encoded = prefix_and_encode_register(dest, source)
+            emit 0x0f, 0xaf, 0b11000000 | encoded
           else
             raise
           end
@@ -203,9 +201,8 @@ module Rhizome
 
         def and(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
-            raise if source.encoding >= 8
-            raise if dest.encoding >= 8
-            emit REXW, 0x21, 0b11000000 | (source.encoding << 3) | dest.encoding
+            encoded = prefix_and_encode_register(source, dest)
+            emit 0x21, 0b11000000 | encoded
           else
             raise
           end
@@ -213,12 +210,14 @@ module Rhizome
 
         def shr(shift, register)
           raise unless shift == RCX
-          emit REXW, 0xd3, 0xe8 | register.encoding
+          encoded = prefix_and_encode_register(register)
+          emit 0xd3, 0xe8 | encoded
         end
 
         def shl(shift, register)
           raise unless shift == RCX
-          emit REXW, 0xd3, 0xe0 | register.encoding
+          encoded = prefix_and_encode_register(register)
+          emit 0xd3, 0xe0 | encoded
         end
 
         def pop(dest)
@@ -229,9 +228,8 @@ module Rhizome
 
         def cmp(a, b)
           if a.is_a?(Register) && b.is_a?(Register)
-            raise if a.encoding >= 8
-            raise if b.encoding >= 8
-            emit REXW, 0x39, 0b11000000 | (a.encoding << 3) | b.encoding
+            encoded = prefix_and_encode_register(a, b)
+            emit 0x39, 0b11000000 | encoded
           else
             raise
           end
@@ -335,6 +333,38 @@ module Rhizome
 
         def emit_sint64(value)
           emit *[value].pack('q<').bytes
+        end
+
+        def prefix_and_encode_register(primary, secondary=nil)
+          primary = primary.encoding
+          secondary = secondary.encoding if secondary
+          if secondary
+            if primary < 8
+              if secondary < 8
+                emit REXW
+              else
+                emit REXWB
+                secondary -= 8
+              end
+            else
+              if secondary < 8
+                emit REXWR
+              else
+                emit REXWRB
+                secondary -= 8
+              end
+              primary -= 8
+            end
+            primary << 3 | secondary
+          else
+            if primary < 8
+              emit REXW
+            else
+              emit REXWB
+              primary -= 8
+            end
+            primary
+          end
         end
 
       end

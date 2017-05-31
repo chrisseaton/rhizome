@@ -88,7 +88,7 @@ module Rhizome
             lowered = {
                 fixnum_add: :int64_add,
                 fixnum_sub: :int64_sub,
-                fixnum_mul: :int64_mul
+                fixnum_mul: :int64_imul
             }[n.op]
             
             n.replace IR::Node.new(lowered, argc: 1)

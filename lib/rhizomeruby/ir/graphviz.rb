@@ -214,6 +214,9 @@ module Rhizome
         sequence = node.props[:sequence]
         label += " ↓#{sequence}" if sequence
 
+        register_sequence = node.props[:register_sequence]
+        label += " r↓#{register_sequence}" if register_sequence
+
         register = node.props[:register]
         label += " →#{register}" if register
 

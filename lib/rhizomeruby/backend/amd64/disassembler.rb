@@ -51,7 +51,7 @@ module Rhizome
 
           prefix = nil
 
-          if [REXB, REXW].include?(byte)
+          if (byte & 0xf0) == 0x40
             prefix = byte
             byte = shift
           end
@@ -74,9 +74,9 @@ module Rhizome
           elsif byte == 0x0f
             byte = shift
             if byte == 0xaf
-              raise unless prefix == REXW
               byte = shift
-              insn = "imul #{register(byte & 0x7)} #{register((byte >> 3) & 0x7)}"
+              source, dest = decode_prefix_and_registers(prefix, byte, true, true)
+              insn = "imul #{source} #{dest}"
             else
               name = case byte & ~0x80
                        when EQUAL;         'e'
@@ -97,35 +97,33 @@ module Rhizome
           elsif byte & 0xf8 == 0x58
             insn = "pop #{register(prefix, byte & 0x7)}"
           elsif byte == 0x01
-            raise unless prefix == REXW
             byte = shift
-            insn = "add #{register((byte >> 3) & 0x7)} #{register(byte & 0x7)}"
+            source, dest = decode_prefix_and_registers(prefix, byte, true)
+            insn = "add #{source} #{dest}"
           elsif byte == 0x29
-            raise unless prefix == REXW
             byte = shift
-            insn = "sub #{register((byte >> 3) & 0x7)} #{register(byte & 0x7)}"
+            source, dest = decode_prefix_and_registers(prefix, byte, true)
+            insn = "sub #{source} #{dest}"
           elsif byte == 0x21
-            raise unless prefix == REXW
             byte = shift
-            insn = "and #{register((byte >> 3) & 0x7)} #{register(byte & 0x7)}"
+            source, dest = decode_prefix_and_registers(prefix, byte, true)
+            insn = "and #{source} #{dest}"
           elsif byte == 0x39
-            raise unless prefix == REXW
             byte = shift
-            insn = "cmp #{register((byte >> 3) & 0x7)} #{register(byte & 0x7)}"
+            source, dest = decode_prefix_and_registers(prefix, byte, true)
+            insn = "cmp #{source} #{dest}"
           elsif byte == 0xd3
-            raise unless prefix == REXW
             byte = shift
             name = case byte & 0xe8
                      when 0xe8;   'r'
                      when 0xe0;   'l'
                      else;        raise
                    end
-            insn = "sh#{name} %cl #{register(prefix, byte & 0x7)}"
+            dest, _ = decode_prefix_and_registers(prefix, byte)
+            insn = "sh#{name} %cl #{dest}"
           elsif [0x89, 0x8b].include?(byte)
-            raise unless prefix == REXW
             next_byte = shift
-            r1 = register((next_byte >> 3) & 0x7)
-            r2 = register(next_byte & 0x7)
+            r1, r2 = decode_prefix_and_registers(prefix, next_byte, true)
             if (next_byte & 0b11000000) == 0b01000000
               offset = shift
               offset -= 256 if (offset & 0x80) == 0x80
@@ -167,6 +165,39 @@ module Rhizome
         def register(prefix=nil, encoding)
           encoding += 8 if prefix == REXB
           '%' + REGISTERS.find { |r| r.encoding == encoding }.name.to_s.downcase
+        end
+
+        def decode_prefix_and_registers(prefix, encoded, two=false, reverse=false)
+          if two
+            source = (encoded >> 3) & 0x7
+            dest = encoded & 0x7
+            case prefix
+              when REXW
+              when REXWB
+                dest += 8
+              when REXWR
+                source += 8
+              when REXWRB
+                source += 8
+                dest += 8
+              else
+                raise
+            end
+            source, dest = dest, source if reverse
+          else
+            source = encoded & 0x7
+            dest = nil
+            case prefix
+              when REXW
+              when REXWB
+                source += 8
+              else
+                raise
+            end
+          end
+          source = '%' + REGISTERS.find { |r| r.encoding == source }.name.to_s.downcase
+          dest = '%' + REGISTERS.find { |r| r.encoding == dest }.name.to_s.downcase if dest
+          [source, dest]
         end
         
         def shift

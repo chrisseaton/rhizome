@@ -43,10 +43,18 @@ passes_runner.run graph
 scheduler = Rhizome::Scheduler.new
 scheduler.schedule graph
 
-registers = Rhizome::RegisterAllocator.new
-registers.allocate_infinite graph
+register_allocator = Rhizome::RegisterAllocator.new
+
+register_allocator.sequence_nodes graph
 
 if Rhizome::IR::Graphviz.available?
   viz = Rhizome::IR::Graphviz.new(graph)
-  viz.visualise 'infinite-registers.pdf'
+  viz.visualise 'sequenced.pdf'
+end
+
+live_ranges = register_allocator.live_ranges(graph)
+registers = register_allocator.linear_scan(live_ranges)
+
+live_ranges.each do |range|
+  puts "#{range.producer.op} #{range.start} -> #{range.finish} in #{registers[range]}"
 end

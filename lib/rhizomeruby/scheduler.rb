@@ -384,8 +384,7 @@ module Rhizome
 
       basic_block_starters.each do |node|
         original_first_node = node
-        node = first_in_block(original_first_node, nodes_in_block(original_first_node))
-        first_node = node
+        first_node = first_in_block(original_first_node, nodes_in_block(original_first_node))
 
         # We're going to create an array of operations for this basic
         # block.
@@ -394,6 +393,8 @@ module Rhizome
         next_to_last_control = nil
 
         # Follow the local sequence.
+
+        node = first_node
 
         begin
           # We don't want to include operations that are just there to form
@@ -435,7 +436,7 @@ module Rhizome
             end
 
             # Send instructions and lowered equivalents need the arguments.
-            if [:send, :call_managed, :int64_add, :int64_sub, :int64_mul, :int64_and, :int64_shift_left, :int64_shift_right].include?(node.op)
+            if [:send, :call_managed, :int64_add, :int64_sub, :int64_imul, :int64_and, :int64_shift_left, :int64_shift_right].include?(node.op)
               insn.push node.inputs.with_input_name(:receiver).from_nodes.first.props[:register]
 
               if node.op == :send
@@ -502,6 +503,14 @@ module Rhizome
           # Follow the local schedule edge to the next node.
           node = node.outputs.with_output_name(:local_schedule).to_nodes.first
         end while node && node.op != :merge
+
+        # Empty blocks cause problems elsewhere - it's easier to just have a nop
+        # in them. Really, we should remove empty blocks by modifying the
+        # instruction that jumps here to jump to wherever this leads to.
+
+        if block.empty?
+          block.push [:nop]
+        end
 
         # If the last node is a merge, we need to remember which merge index this is.
 

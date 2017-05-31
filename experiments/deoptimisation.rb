@@ -87,7 +87,7 @@ scheduler = Rhizome::Scheduler.new
 scheduler.schedule graph
 
 register_allocator = Rhizome::RegisterAllocator.new
-register_allocator.allocate_infinite_stack graph
+register_allocator.allocate graph
 
 blocks = scheduler.linearize(graph)
 

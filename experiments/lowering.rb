@@ -101,8 +101,7 @@ scheduler = Rhizome::Scheduler.new
 scheduler.schedule graph
 
 register_allocator = Rhizome::RegisterAllocator.new
-register_allocator.allocate_infinite graph
-
+register_allocator.allocate graph
 
 if Rhizome::IR::Graphviz.available?
   viz = Rhizome::IR::Graphviz.new(graph)

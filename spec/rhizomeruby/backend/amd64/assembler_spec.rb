@@ -79,9 +79,19 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0x8b, 0x6c, 0x0a]
     end
 
+    it 'correctly assembles address to high register' do
+      @assembler.mov Rhizome::Backend::AMD64::RBP + 10, Rhizome::Backend::AMD64::R13
+      expect(@assembler.bytes).to eql [0x4c, 0x8b, 0x6d, 0x0a]
+    end
+
     it 'correctly assembles register to address' do
       @assembler.mov Rhizome::Backend::AMD64::RSP, Rhizome::Backend::AMD64::RBP + 10
       expect(@assembler.bytes).to eql [0x48, 0x89, 0x65, 0x0a]
+    end
+
+    it 'correctly assembles high register to address' do
+      @assembler.mov Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::RBP + 10
+      expect(@assembler.bytes).to eql [0x4c, 0x89, 0x6d, 0x0a]
     end
 
     it 'correctly assembles small value to register' do
@@ -99,11 +109,23 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0x89, 0x65, 0xf6]
     end
 
-    it 'handles all low registers' do
-      Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r1|
-        Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r2|
+    it 'handles all registers' do
+      Rhizome::Backend::AMD64::REGISTERS.each do |r1|
+        Rhizome::Backend::AMD64::REGISTERS.each do |r2|
           @assembler.mov r1, r2
         end
+      end
+    end
+
+    it 'handles all registers to address' do
+      Rhizome::Backend::AMD64::REGISTERS.each do |r|
+        @assembler.mov r, Rhizome::Backend::AMD64::RBP + 10
+      end
+    end
+
+    it 'handles all registers from address' do
+      Rhizome::Backend::AMD64::REGISTERS.each do |r|
+        @assembler.mov Rhizome::Backend::AMD64::RBP + 10, r
       end
     end
 
@@ -116,9 +138,14 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0x01, 0xe5]
     end
 
-    it 'handles all low registers' do
-      Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r1|
-        Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r2|
+    it 'correctly assembles high registers' do
+      @assembler.add Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+      expect(@assembler.bytes).to eql [0x4d, 0x01, 0xee]
+    end
+
+    it 'handles all registers' do
+      Rhizome::Backend::AMD64::REGISTERS.each do |r1|
+        Rhizome::Backend::AMD64::REGISTERS.each do |r2|
           @assembler.add r1, r2
         end
       end
@@ -133,9 +160,14 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0x29, 0xe5]
     end
 
-    it 'handles all low registers' do
-      Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r1|
-        Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r2|
+    it 'correctly assembles high registers' do
+      @assembler.sub Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+      expect(@assembler.bytes).to eql [0x4d, 0x29, 0xee]
+    end
+
+    it 'handles all registers' do
+      Rhizome::Backend::AMD64::REGISTERS.each do |r1|
+        Rhizome::Backend::AMD64::REGISTERS.each do |r2|
           @assembler.sub r1, r2
         end
       end
@@ -150,9 +182,14 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0x0f, 0xaf, 0xc8]
     end
 
-    it 'handles all low registers' do
-      Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r1|
-        Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r2|
+    it 'correctly assembles high registers' do
+      @assembler.imul Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+      expect(@assembler.bytes).to eql [0x4d, 0x0f, 0xaf, 0xf5]
+    end
+
+    it 'handles all registers' do
+      Rhizome::Backend::AMD64::REGISTERS.each do |r1|
+        Rhizome::Backend::AMD64::REGISTERS.each do |r2|
           @assembler.imul r1, r2
         end
       end
@@ -167,9 +204,14 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0x21, 0xe5]
     end
 
-    it 'handles all low registers' do
-      Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r1|
-        Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r2|
+    it 'correctly assembles high registers' do
+      @assembler.and Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+      expect(@assembler.bytes).to eql [0x4d, 0x21, 0xee]
+    end
+
+    it 'handles all registers' do
+      Rhizome::Backend::AMD64::REGISTERS.each do |r1|
+        Rhizome::Backend::AMD64::REGISTERS.each do |r2|
           @assembler.and r1, r2
         end
       end
@@ -184,8 +226,13 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0xd3, 0xe8]
     end
 
-    it 'handles all low registers' do
-      Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r|
+    it 'correctly assembles high registers' do
+      @assembler.shr Rhizome::Backend::AMD64::RCX, Rhizome::Backend::AMD64::R13
+      expect(@assembler.bytes).to eql [0x49, 0xd3, 0xed]
+    end
+
+    it 'handles all registers' do
+      Rhizome::Backend::AMD64::REGISTERS.each do |r|
         @assembler.shr Rhizome::Backend::AMD64::RCX, r
       end
     end
@@ -199,8 +246,13 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0xd3, 0xe0]
     end
 
-    it 'handles all low registers' do
-      Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r|
+    it 'correctly assembles high registers' do
+      @assembler.shl Rhizome::Backend::AMD64::RCX, Rhizome::Backend::AMD64::R13
+      expect(@assembler.bytes).to eql [0x49, 0xd3, 0xe5]
+    end
+
+    it 'handles all registers' do
+      Rhizome::Backend::AMD64::REGISTERS.each do |r|
         @assembler.shl Rhizome::Backend::AMD64::RCX, r
       end
     end
@@ -214,9 +266,14 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0x39, 0xc1]
     end
 
-    it 'handles all low registers' do
-      Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r1|
-        Rhizome::Backend::AMD64::LOW_REGISTERS.each do |r2|
+    it 'correctly assembles high registers' do
+      @assembler.cmp Rhizome::Backend::AMD64::R13, Rhizome::Backend::AMD64::R14
+      expect(@assembler.bytes).to eql [0x4d, 0x39, 0xee]
+    end
+
+    it 'handles all registers' do
+      Rhizome::Backend::AMD64::REGISTERS.each do |r1|
+        Rhizome::Backend::AMD64::REGISTERS.each do |r2|
           @assembler.cmp r1, r2
         end
       end

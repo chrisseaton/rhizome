@@ -27,46 +27,143 @@ module Rhizome
 
   class RegisterAllocator
 
-    # The infinite allocator is a tool for demonstrations and writing tests
-    # which puts each value into a unique register, without worrying about how
-    # many registers this will need or whether we could reuse registers already
-    # used for a value that is no longer needed.
+    # Allocate registers using the linear scan algorithm.
 
-    def allocate_infinite(graph)
-      # Assign each node a unique register
+    def allocate(graph)
+      # Give all nodes a linear sequence number.
 
-      n = 0
-      graph.all_nodes.each do |node|
-        if node.produces_value?
-          node.props[:register] = :"r#{n}"
-          n += 1
-        end
+      sequence_nodes graph
+
+      # Get the live ranges of all values.
+
+      live_ranges = live_ranges(graph)
+
+      # Run linear scan to allocate registers to values.
+
+      registers = linear_scan(live_ranges)
+
+      # Annotate the values with their registers.
+
+      registers.each do |range, register|
+        range.producer.props[:register] = register.name.to_s.downcase.to_sym
       end
 
-      # We're going to need to move all inputs to a phi into the phi node's
-      # register
+      # Add move instructions to move values into the correct register
+      # before a phi.
 
       add_phi_moves graph
     end
 
-    # The infinite stack allocator is similar to #allocate_infinite, but it
-    # always uses stack slots, so code using this can actually be compiled.
+    # Give all nodes a linear sequence number. A node will always have a higher sequence
+    # number than all of its inputs. This is similar to the partially order operation in
+    # the scheduler, but we consider value inputs here as well as control inputs.
 
-    def allocate_infinite_stack(graph, word_bytes=Rhizome::Config::WORD_BYTES, first_stack_slot=Rhizome::Config::FIRST_STACK_SLOT)
-      # Assign each node a unique stack slot
+    def sequence_nodes(graph)
+      # Note that this algorithm is very wasteful! It allocates two sides of a branch
+      # the same sequence numbers. This means that to the linear scan values on both
+      # sides of the branch and internal to those branches appear to be live at the
+      # same time and they won't use the same registers. I think we're supposed to be
+      # sequencing one side of the branch at a time, and starting the right side
+      # with the max sequence number of the left side.
 
-      s = first_stack_slot
-      graph.all_nodes.each do |node|
-        if node.produces_value?
-          node.props[:register] = :"s#{s}"
-          s += word_bytes
+      # Create a worklist of nodes to sequence.
+
+      to_sequence = graph.all_nodes
+
+      until to_sequence.empty?
+        node = to_sequence.shift
+
+        # If all this node's inputs have already been sequenced.
+
+        if node.inputs.from_nodes.all? { |i| i.props[:register_sequence] }
+          # Give this node an sequence number at least one higher than all others.
+          input_sequences = node.inputs.from_nodes.map { |i| i.props[:register_sequence] }
+          node.props[:register_sequence] = if input_sequences.empty? then 0 else input_sequences.max + 1 end
+          next
         end
+
+        # Not all inputs were sequenced - put this node back on the list and try again later.
+
+        to_sequence.push node
+      end
+    end
+
+    # For each value produce an object which says when it is live from and until.
+
+    def live_ranges(graph)
+      graph.all_nodes.select(&:produces_value?).map do |producer|
+        # A value is live from when the node producing it runs...
+        start = producer.props[:register_sequence]
+
+        # Until the last node using it runs.
+        finish = graph.all_nodes.select { |u| u.inputs.from_nodes.include?(producer) }.map { |u| u.props[:register_sequence] }.max
+
+        LiveRange.new(producer, start, finish)
+      end
+    end
+
+    LiveRange = Struct.new(:producer, :start, :finish)
+
+    # Assign registers to live ranges using the linear scan algorithm.
+
+    def linear_scan(live_ranges)
+      # We've hardcoded the AMD64 architecture in here for now!
+
+      # The registers currently available to store values in.
+      available = Backend::AMD64::USER_REGISTERS.dup
+
+      # The ranges which are currently active.
+      active_ranges = []
+
+      # Registers allocated to ranges.
+      registers = {}
+
+      # Separate argument live ranges from other ranges.
+      argument_ranges, other_ranges = live_ranges.partition { |range| [:self, :arg].include?(range.producer.op) }
+
+      # Artificially say that values for arguments start from
+      # the start of the method, not from when the arg or self
+      # node is scheduled, and allocate them the register they
+      # will be in anyway.
+
+      argument_ranges.each do |range|
+        if range.producer.op == :self
+          register = Backend::AMD64::ARGUMENT_REGISTERS[0]
+        else
+          register = Backend::AMD64::ARGUMENT_REGISTERS[range.producer.props[:n] + 1]
+        end
+        available.delete register
+        registers[range] = register
+        active_ranges.push range
       end
 
-      # We're going to need to move all inputs to a phi into the phi node's
-      # stack slot
+      # Then look at other ranges - go through each one in order of when
+      # they start.
 
-      add_phi_moves graph
+      other_ranges.sort_by(&:start).each do |range|
+        # Retire any active ranges where we have no passed their finish point.
+
+        active_ranges.dup.each do |a|
+          if a.finish <= range.start
+            active_ranges.delete a
+            # Put their register back into the list of available registers.
+            available.unshift registers[a]
+          end
+        end
+
+        # If we have run out of registers we would spill and start to use the
+        # stack to store values, but we haven't implemented this functionality.
+
+        raise if available.empty?
+
+        # Take a register and make this range as live.
+
+        register = available.shift
+        registers[range] = register
+        active_ranges.push range
+      end
+
+      registers
     end
 
     # After we've allocated registers, however we've done it, we may not have
