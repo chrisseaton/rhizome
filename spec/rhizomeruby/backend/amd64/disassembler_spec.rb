@@ -93,10 +93,22 @@ describe Rhizome::Backend::AMD64::Disassembler do
           expect(@disassembler.next).to eql '0x0000000000000000  mov 0xe %rax                  ; b8 0e 00 00 00'
         end
 
+        it 'small value to high register' do
+          @assembler.mov Rhizome::Backend::AMD64::Value.new(14), Rhizome::Backend::AMD64::R13
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  mov 0xe %r13                  ; 41 bd 0e 00 00 00'
+        end
+
         it 'big value to register' do
           @assembler.mov Rhizome::Backend::AMD64::Value.new(0x1234567812345678), Rhizome::Backend::AMD64::RAX
           @disassemble.call
           expect(@disassembler.next).to eql '0x0000000000000000  mov 0x1234567812345678 %rax   ; 48 b8 78 56 34 12 78 56 34 12'
+        end
+
+        it 'big value to high register' do
+          @assembler.mov Rhizome::Backend::AMD64::Value.new(0x1234567812345678), Rhizome::Backend::AMD64::R13
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  mov 0x1234567812345678 %r13   ; 49 bd 78 56 34 12 78 56 34 12'
         end
 
         it 'with negative offsets' do

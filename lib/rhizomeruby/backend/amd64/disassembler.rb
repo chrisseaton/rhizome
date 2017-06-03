@@ -49,11 +49,11 @@ module Rhizome
         def read
           byte = shift
 
-          prefix = nil
-
-          if (byte & 0xf0) == 0x40
+          if PREFIXES.include?(byte)
             prefix = byte
             byte = shift
+          else
+            prefix = nil
           end
 
           if byte == 0xc3
@@ -143,8 +143,8 @@ module Rhizome
             end
             insn = "mov #{source} #{dest}"
           elsif byte & 0xf8 == 0xb8
-            dest = register(byte & 0x7)
-            if prefix == REXW
+            dest = register(prefix, byte & 0x7)
+            if [REXW, REXWB].include?(prefix)
               value = shift_sint64
             else
               value = shift_sint32
@@ -163,7 +163,7 @@ module Rhizome
         end
 
         def register(prefix=nil, encoding)
-          encoding += 8 if prefix == REXB
+          encoding += 8 if [REXB, REXWB].include?(prefix)
           '%' + REGISTERS.find { |r| r.encoding == encoding }.name.to_s.downcase
         end
 

@@ -80,11 +80,10 @@ module Rhizome
 
       REGISTERS = [:RAX, :RCX, :RDX, :RBX, :RSP, :RBP, :RSI, :RDI,
                    :R8,  :R9,  :R10, :R11, :R12, :R13, :R14, :R15].map.with_index { |name, encoding|
-        Register.new(name, encoding)
+        const_set(name, Register.new(name, encoding))
       }
 
       REGISTERS.each do |r|
-        const_set r.name, r
       end
 
       USER_REGISTERS = [RDX, RSI, RDI, R8, R9, R10, R11, RBX, R12, R13, R14, R15]
@@ -95,16 +94,20 @@ module Rhizome
 
       # Prefixes are part of the AMD64 encoding system.
 
-      [:REX,    :REXB,
-       :REXX,   :REXXB,
-       :REXR,   :REXRB,
-       :REXRX,  :REXRXB,
-       :REXW,   :REXWB,
-       :REXWX,  :REXWXB,
-       :REXWR,  :REXWRB,
-       :REXWRX, :REXWRXB].each_with_index do |name, encoding|
-        const_set name, 0x40 + encoding
+      PREFIXES = [
+          :REX,    :REXB,
+          :REXX,   :REXXB,
+          :REXR,   :REXRB,
+          :REXRX,  :REXRXB,
+          :REXW,   :REXWB,
+          :REXWX,  :REXWXB,
+          :REXWR,  :REXWRB,
+          :REXWRX, :REXWRXB
+      ].map.each_with_index do |name, index|
+        const_set(name, 0x40 + index)
       end
+
+
 
       # Condition flags.
 
@@ -158,13 +161,18 @@ module Rhizome
             raise unless dest.offset >= -127 && dest.offset <= 128
             emit 0x89, 0b01000000 | encoded, dest.offset
           elsif source.is_a?(Value) && dest.is_a?(Register)
-            raise if dest.encoding >= 8
+            prefix, encoded = dest.prefix_and_encoding
             if source.value >= -2147483648 && source.value <= 2147483647
-              emit 0b10111000 | dest.encoding
+              emit prefix if prefix
+              emit 0b10111000 | encoded
               emit_sint32 source.value
             else
-              emit REXW
-              emit 0b10111000 | dest.encoding
+              if prefix == REXB
+                emit REXWB
+              else
+                emit REXW
+              end
+              emit 0b10111000 | encoded
               emit_sint64 source.value
             end
           else
@@ -317,6 +325,10 @@ module Rhizome
 
         def reference(object)
           @references.push object
+        end
+
+        def write(file)
+          File.write(file, bytes.pack('C*'))
         end
         
         private

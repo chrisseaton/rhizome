@@ -93,14 +93,7 @@ module Rhizome
                   _, value, dest = insn
                   # TODO we should differentiate clearly between untagged constant numbers and object constants
                   value = @handles.to_native(value) unless value.is_a?(Integer)
-
-                  if register?(dest) && operand(dest).encoding < 8
-                    @assembler.mov Value.new(value), prepare_output(dest)
-                  else
-                    @assembler.mov Value.new(value), SCRATCH_REGISTERS[0]
-                    @assembler.mov SCRATCH_REGISTERS[0], prepare_output(dest)
-                  end
-
+                  @assembler.mov Value.new(value), prepare_output(dest)
                   finish_output dest
                 when :move
                   _, source, dest = insn

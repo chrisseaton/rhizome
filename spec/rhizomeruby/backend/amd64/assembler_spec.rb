@@ -99,9 +99,19 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0xb8, 0x0e, 0x00, 0x00, 0x00]
     end
 
+    it 'correctly assembles small value to high register' do
+      @assembler.mov Rhizome::Backend::AMD64::Value.new(14), Rhizome::Backend::AMD64::R13
+      expect(@assembler.bytes).to eql [0x41, 0xbd, 0x0e, 0x00, 0x00, 0x00]
+    end
+
     it 'correctly assembles big value to register' do
       @assembler.mov Rhizome::Backend::AMD64::Value.new(0x1234567812345678), Rhizome::Backend::AMD64::RAX
       expect(@assembler.bytes).to eql [0x48, 0xb8, 0x78, 0x56, 0x34, 0x12, 0x78, 0x56, 0x34, 0x12]
+    end
+
+    it 'correctly assembles big value to high register' do
+      @assembler.mov Rhizome::Backend::AMD64::Value.new(0x1234567812345678), Rhizome::Backend::AMD64::R13
+      expect(@assembler.bytes).to eql [0x49, 0xbd, 0x78, 0x56, 0x34, 0x12, 0x78, 0x56, 0x34, 0x12]
     end
 
     it 'correctly assembles negative offsets' do
