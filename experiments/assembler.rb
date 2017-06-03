@@ -49,12 +49,10 @@ assembler.pop  RBP              # Restore the caller's frame address
 
 assembler.ret                   # Return
 
-machine_code = assembler.bytes
-
 puts 'Assembled machine code:'
 puts
 
-machine_code.each_slice(8) do |row|
+assembler.bytes.each_slice(8) do |row|
   row.each do |b|
     print b.to_s(16).rjust(2, '0')
   end
@@ -63,8 +61,8 @@ end
 
 puts
 
-memory = Rhizome::Memory.new(machine_code.size)
-memory.write 0, machine_code
+memory = Rhizome::Memory.new(assembler.size)
+memory.write 0, assembler.bytes
 memory.executable = true
 native_method = memory.to_proc([:long, :long], :long)
 

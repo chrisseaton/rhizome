@@ -107,8 +107,6 @@ module Rhizome
         const_set(name, 0x40 + index)
       end
 
-
-
       # Condition flags.
 
       EQUAL         = 0x4
@@ -274,10 +272,7 @@ module Rhizome
             # If it doesn't, remember that we want to patch this location in the
             # future and emit 0s for now.
             label.patch_point location + 4
-            emit 0x00
-            emit 0x00
-            emit 0x00
-            emit 0x00
+            emit_sint32 0
           end
 
           label
@@ -313,6 +308,10 @@ module Rhizome
 
         def ret
           emit 0xc3
+        end
+
+        def size
+          bytes.size
         end
 
         def location

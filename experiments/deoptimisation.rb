@@ -107,18 +107,16 @@ assembler = Rhizome::Backend::AMD64::Assembler.new(handles)
 codegen = Rhizome::Backend::AMD64::Codegen.new(assembler, handles, interface)
 codegen.generate blocks
 
-machine_code = assembler.bytes
+memory = Rhizome::Memory.new(assembler.size)
+memory.write 0, assembler.bytes
+memory.executable = true
+native_method = memory.to_proc([:long, :long, :long], :long)
 
-disassembler = Rhizome::Backend::AMD64::Disassembler.new(machine_code)
+disassembler = Rhizome::Backend::AMD64::Disassembler.new(assembler.bytes, memory.address.to_i)
 
 while disassembler.more?
   puts disassembler.next
 end
-
-memory = Rhizome::Memory.new(machine_code.size)
-memory.write 0, machine_code
-memory.executable = true
-native_method = memory.to_proc([:long, :long, :long], :long)
 
 puts "Installed code to 0x#{memory.address.to_i.to_s(16)}"
 puts

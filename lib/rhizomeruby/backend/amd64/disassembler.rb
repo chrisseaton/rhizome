@@ -27,9 +27,10 @@ module Rhizome
       
       class Disassembler
         
-        def initialize(bytes)
+        def initialize(bytes, installed_location=0)
           @bytes = bytes
           @pos = 0
+          @installed_location = installed_location
         end
         
         def more?
@@ -39,7 +40,7 @@ module Rhizome
         def next
           @start = @pos
           text = read
-          address = '0x' + @start.to_s(16).rjust(16, '0')
+          address = '0x' + (@start + @installed_location).to_s(16).rjust(16, '0')
           bytes = @bytes[@start...@pos].map { |b| b.to_s(16).rjust(2, '0') }.join(' ')
           address + '  ' + text.ljust(29) + ' ; ' + bytes
         end
@@ -69,7 +70,7 @@ module Rhizome
             insn = 'int 3'
           elsif byte == 0xe9
             offset = shift_sint32
-            target = @start + 5 + offset
+            target = @installed_location + @start + 5 + offset
             insn = "jmp #{offset} (0x#{target.to_s(16).rjust(16, '0')})"
           elsif byte == 0x0f
             byte = shift
@@ -89,7 +90,7 @@ module Rhizome
                        else;                raise
                      end
               offset = shift_sint32
-              target = @start + 6 + offset
+              target = @installed_location + @start + 6 + offset
               insn = "j#{name} #{offset} (0x#{target.to_s(16).rjust(16, '0')})"
             end
           elsif byte & 0xf8 == 0x50
