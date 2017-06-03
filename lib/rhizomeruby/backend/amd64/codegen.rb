@@ -219,8 +219,7 @@ module Rhizome
 
                   # Call into managed.
 
-                  @assembler.mov Value.new(@interface.call_managed_address), SCRATCH_REGISTERS[0]
-                  @assembler.call Indirection.new(SCRATCH_REGISTERS[0])
+                  @assembler.call Value.new(@interface.call_managed_address)
 
                   # Pop args back off.
 
@@ -300,8 +299,7 @@ module Rhizome
             @assembler.mov RBP, RDI
             @assembler.mov RSP, RSI
             @assembler.mov Handle.new(deopt.frame_state), RDX
-            @assembler.mov Value.new(@interface.continue_in_interpreter_address), RAX
-            @assembler.call Indirection.new(RAX)
+            @assembler.call Value.new(@interface.continue_in_interpreter_address)
 
             # Don't trash the return value!
 

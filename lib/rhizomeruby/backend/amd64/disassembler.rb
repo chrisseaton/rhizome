@@ -27,10 +27,11 @@ module Rhizome
       
       class Disassembler
         
-        def initialize(bytes, installed_location=0)
+        def initialize(bytes, installed_location=0, symbols=nil)
           @bytes = bytes
           @pos = 0
           @installed_location = installed_location
+          @symbols = symbols
         end
         
         def more?
@@ -63,6 +64,23 @@ module Rhizome
             target = shift
             if target & 0xd0 == 0xd0
               insn = "call *#{register(prefix, target & ~0xd0)}"
+            else
+              raise
+            end
+          elsif byte == 0xe8
+            relative = shift_sint32
+            insn = "call #{relative}"
+            if @installed_location != 0
+              target = @installed_location + @pos + relative
+              insn += " (0x#{target.to_s(16).rjust(16, '0')}"
+              if @symbols
+                symbol = @symbols[target]
+                if symbol
+                  insn += ' '
+                  insn += symbol.to_s
+                end
+              end
+              insn += ')'
             end
           elsif byte == 0x90
             insn = 'nop'

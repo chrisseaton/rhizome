@@ -343,6 +343,26 @@ describe Rhizome::Backend::AMD64::Assembler do
 
   describe '#call' do
 
+    it 'correctly assembles forward direct calls' do
+      called_location = 14000
+      installed_location = 1000
+      @assembler.call Rhizome::Backend::AMD64::Value.new(called_location)
+      @assembler.patch_for_install_location installed_location
+      relative = called_location - (installed_location + 5)
+      expect(relative).to be_positive
+      expect(@assembler.bytes).to eql [0xe8, *[relative].pack('l<').bytes]
+    end
+
+    it 'correctly assembles backward direct calls' do
+      called_location = 14
+      installed_location = 1000
+      @assembler.call Rhizome::Backend::AMD64::Value.new(called_location)
+      @assembler.patch_for_install_location installed_location
+      relative = called_location - (installed_location + 5)
+      expect(relative).to be_negative
+      expect(@assembler.bytes).to eql [0xe8, *[relative].pack('l<').bytes]
+    end
+
     it 'correctly assembles indirect calls' do
       @assembler.call Rhizome::Backend::AMD64::Indirection.new(Rhizome::Backend::AMD64::RAX)
       expect(@assembler.bytes).to eql [0xff, 0xd0]

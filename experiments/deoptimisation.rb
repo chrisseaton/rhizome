@@ -108,11 +108,12 @@ codegen = Rhizome::Backend::AMD64::Codegen.new(assembler, handles, interface)
 codegen.generate blocks
 
 memory = Rhizome::Memory.new(assembler.size)
+assembler.patch_for_install_location memory.address.to_i
 memory.write 0, assembler.bytes
 memory.executable = true
 native_method = memory.to_proc([:long, :long, :long], :long)
 
-disassembler = Rhizome::Backend::AMD64::Disassembler.new(assembler.bytes, memory.address.to_i)
+disassembler = Rhizome::Backend::AMD64::Disassembler.new(assembler.bytes, memory.address.to_i, interface.symbols)
 
 while disassembler.more?
   puts disassembler.next

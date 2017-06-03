@@ -135,7 +135,26 @@ assembler.label finished
 Internally, the assembler emits a jump to `0` when you jump to a label that
 hasn't been defined yet, and records all the places that it has done so. When
 you do define the label later on, it goes back to the record of places where the
-jump was used before it was defined and puts the actual address in.
+jump was used before it was defined and patches the actual relative address in.
+
+#### Patching for installed location
+
+Jumps to labels can be patched as the code is generated because a relative
+address is used in jump instructions and we know how far apart the jump and
+label are. However, `call` instructions use relative addressing but to a target
+that is already installed and so already has a fixed address - such as code from
+another method or a runtime routine. We can't work out the relative address
+until the code we are generating is installed.
+
+Perhaps we could allocate the memory for our code before we started generating
+it, so we already know where the code would be installed, but we don't know how
+much space our code will take until we have generated it.
+
+Instead, what we do is emit a call to relative address `0`, as with jumps to a
+label that is not yet defined. The assembler records that there is a pending
+relative address at that location. We then provide a method in the assembler to
+patch the code when the installed address is known - so after the memory has
+been allocated and before the machine code bytes are copied into it.
 
 #### References
 

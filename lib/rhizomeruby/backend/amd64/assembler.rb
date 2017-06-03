@@ -127,6 +127,7 @@ module Rhizome
         def initialize(handles=nil)
           @handles = handles
           @bytes = []
+          @install_relative_addresses = []
           @references = []
         end
 
@@ -301,6 +302,10 @@ module Rhizome
             else
               raise
             end
+          elsif dest.is_a?(Value)
+            emit 0xe8
+            @install_relative_addresses.push [location, dest.value]
+            emit_sint32 0
           else
             raise
           end
@@ -324,6 +329,14 @@ module Rhizome
 
         def reference(object)
           @references.push object
+        end
+
+        def patch_for_install_location(install_location)
+          @install_relative_addresses.each do |location, absolute|
+            relative = absolute - (install_location + location + 4)
+            raise unless relative >= -2147483648 && relative <= 2147483647
+            patch location, relative
+          end
         end
 
         def write(file)

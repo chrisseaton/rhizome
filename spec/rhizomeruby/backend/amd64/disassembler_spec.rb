@@ -26,8 +26,8 @@ describe Rhizome::Backend::AMD64::Disassembler do
   before :each do
     @assembler = Rhizome::Backend::AMD64::Assembler.new
 
-    @disassemble = proc {
-      @disassembler = Rhizome::Backend::AMD64::Disassembler.new(@assembler.bytes)
+    @disassemble = proc { |installed_location=0, symbols=nil|
+      @disassembler = Rhizome::Backend::AMD64::Disassembler.new(@assembler.bytes, installed_location, symbols)
     }
   end
 
@@ -294,10 +294,41 @@ describe Rhizome::Backend::AMD64::Disassembler do
         expect(@disassembler.next).to eql '0x0000000000000000  jne -6 (0x0000000000000000)   ; 0f 85 fa ff ff ff'
       end
 
-      it 'call' do
-        @assembler.call Rhizome::Backend::AMD64::Indirection.new(Rhizome::Backend::AMD64::RAX)
-        @disassemble.call
-        expect(@disassembler.next).to eql '0x0000000000000000  call *%rax                    ; ff d0'
+      describe 'call' do
+
+        it 'direct forwards' do
+          called_location = 14000
+          installed_location = 1000
+          @assembler.call Rhizome::Backend::AMD64::Value.new(called_location)
+          @assembler.patch_for_install_location installed_location
+          @disassemble.call installed_location
+          expect(@disassembler.next).to eql '0x00000000000003e8  call 12995 (0x00000000000036b0) ; e8 c3 32 00 00'
+        end
+
+        it 'direct forwards with a symbol map' do
+          called_location = 14000
+          installed_location = 1000
+          @assembler.call Rhizome::Backend::AMD64::Value.new(called_location)
+          @assembler.patch_for_install_location installed_location
+          @disassemble.call installed_location, {called_location => :called_location}
+          expect(@disassembler.next).to eql '0x00000000000003e8  call 12995 (0x00000000000036b0 called_location) ; e8 c3 32 00 00'
+        end
+
+        it 'direct backwards' do
+          called_location = 14
+          installed_location = 1000
+          @assembler.call Rhizome::Backend::AMD64::Value.new(called_location)
+          @assembler.patch_for_install_location installed_location
+          @disassemble.call installed_location
+          expect(@disassembler.next).to eql '0x00000000000003e8  call -991 (0x000000000000000e) ; e8 21 fc ff ff'
+        end
+
+        it 'indirect' do
+          @assembler.call Rhizome::Backend::AMD64::Indirection.new(Rhizome::Backend::AMD64::RAX)
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  call *%rax                    ; ff d0'
+        end
+
       end
 
       it 'ret' do

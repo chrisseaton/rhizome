@@ -29,6 +29,7 @@ module Rhizome
     
     attr_reader :call_managed_address
     attr_reader :continue_in_interpreter_address
+    attr_reader :symbols
   
     def initialize(handles)
       @handles = handles
@@ -36,6 +37,10 @@ module Rhizome
       @call_managed_address = @call_managed_function.to_i
       @continue_in_interpreter_function = Memory.from_proc(:long, [:long, :long, :long], &method(:continue_in_interpreter))
       @continue_in_interpreter_address = @continue_in_interpreter_function.to_i
+      @symbols = {
+          @call_managed_address => :call_managed,
+          @continue_in_interpreter_address => :continue_in_interpreter
+      }
     end
     
     # Call a native function (passed in as a proc).
