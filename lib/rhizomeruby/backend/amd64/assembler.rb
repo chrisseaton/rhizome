@@ -186,8 +186,7 @@ module Rhizome
             register_register_operator 0x01, source, dest
           elsif source.is_a?(Value) && dest.is_a?(Register)
             if source.value >= -128 && source.value <= 128
-              prefix, encoding = dest.prefix_and_encoding
-              emit prefix if prefix
+              encoding = prefix_and_encode_register(dest)
               emit 0x83
               emit 0xc0 | encoding
               emit_sint8 source.value
@@ -212,8 +211,7 @@ module Rhizome
             register_register_operator 0x21, source, dest
           elsif source.is_a?(Value) && dest.is_a?(Register)
             if source.value >= -128 && source.value <= 128
-              prefix, encoding = dest.prefix_and_encoding
-              emit prefix if prefix
+              encoding = prefix_and_encode_register(dest)
               emit 0x83
               emit 0xe0 | encoding
               emit_sint8 source.value
@@ -230,8 +228,7 @@ module Rhizome
             register_register_operator 0x39, source, dest
           elsif source.is_a?(Value) && dest.is_a?(Register)
             if source.value >= -128 && source.value <= 128
-              prefix, encoding = dest.prefix_and_encoding
-              emit prefix if prefix
+              encoding = prefix_and_encode_register(dest)
               emit 0x83
               emit 0xf8 | encoding
               emit_sint8 source.value
