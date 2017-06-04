@@ -235,19 +235,17 @@ module Rhizome
 
                   @assembler.call Value.new(@interface.call_managed_address)
 
-                  # Pop args back off.
+                  # Pop the arguments and padding back off.
 
-                  (args.size + 2).times do
-                    raise if SCRATCH_REGISTERS[1] == RAX
-                    @assembler.pop SCRATCH_REGISTERS[1]
-                  end
-
-                  # Restore registers that we preserved
+                  to_pop = args.size + 2
 
                   if new_frame_size % 2 == 1
-                    raise if SCRATCH_REGISTERS[1] == RAX
-                    @assembler.pop SCRATCH_REGISTERS[1]
+                    to_pop += 1
                   end
+
+                  @assembler.add Value.new(to_pop * 8), RSP
+
+                  # Restore registers that we preserved
 
                   CALLER_SAVED.reverse.each do |r|
                     raise if r == RAX
