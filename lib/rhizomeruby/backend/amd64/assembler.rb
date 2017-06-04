@@ -152,21 +152,20 @@ module Rhizome
           end
 
           if source.is_a?(Register) && dest.is_a?(Register)
-            encoded = prefix_and_encode_register(source, dest)
-            emit 0x89, 0b11000000 | encoded
+            register_register_operator 0x89, source, dest
           elsif source.is_a?(Address) && dest.is_a?(Register)
             encoded = prefix_and_encode_register(dest, source.base)
             raise unless source.offset >= -127 && source.offset <= 128
-            emit 0x8b, 0b01000000 | encoded, source.offset
+            emit 0x8b, 0x40 | encoded, source.offset
           elsif source.is_a?(Register) && dest.is_a?(Address)
             encoded = prefix_and_encode_register(source, dest.base)
             raise unless dest.offset >= -127 && dest.offset <= 128
-            emit 0x89, 0b01000000 | encoded, dest.offset
+            emit 0x89, 0x40 | encoded, dest.offset
           elsif source.is_a?(Value) && dest.is_a?(Register)
             prefix, encoded = dest.prefix_and_encoding
             if source.value >= -2147483648 && source.value <= 2147483647
               emit prefix if prefix
-              emit 0b10111000 | encoded
+              emit 0xb8 | encoded
               emit_sint32 source.value
             else
               if prefix == REXB
@@ -174,7 +173,7 @@ module Rhizome
               else
                 emit REXW
               end
-              emit 0b10111000 | encoded
+              emit 0xb8 | encoded
               emit_sint64 source.value
             end
           else
@@ -184,8 +183,7 @@ module Rhizome
 
         def add(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
-            encoded = prefix_and_encode_register(source, dest)
-            emit 0x01, 0b11000000 | encoded
+            register_register_operator 0x01, source, dest
           else
             raise
           end
@@ -193,8 +191,23 @@ module Rhizome
 
         def sub(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
-            encoded = prefix_and_encode_register(source, dest)
-            emit 0x29, 0b11000000 | encoded
+            register_register_operator 0x29, source, dest
+          else
+            raise
+          end
+        end
+
+        def and(source, dest)
+          if source.is_a?(Register) && dest.is_a?(Register)
+            register_register_operator 0x21, source, dest
+          else
+            raise
+          end
+        end
+
+        def cmp(source, dest)
+          if source.is_a?(Register) && dest.is_a?(Register)
+            register_register_operator 0x39, source, dest
           else
             raise
           end
@@ -203,16 +216,7 @@ module Rhizome
         def imul(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
             encoded = prefix_and_encode_register(dest, source)
-            emit 0x0f, 0xaf, 0b11000000 | encoded
-          else
-            raise
-          end
-        end
-
-        def and(source, dest)
-          if source.is_a?(Register) && dest.is_a?(Register)
-            encoded = prefix_and_encode_register(source, dest)
-            emit 0x21, 0b11000000 | encoded
+            emit 0x0f, 0xaf, 0xc0 | encoded
           else
             raise
           end
@@ -252,15 +256,6 @@ module Rhizome
           prefix, encoding = dest.prefix_and_encoding
           emit prefix if prefix
           emit 0x58 | encoding
-        end
-
-        def cmp(a, b)
-          if a.is_a?(Register) && b.is_a?(Register)
-            encoded = prefix_and_encode_register(a, b)
-            emit 0x39, 0b11000000 | encoded
-          else
-            raise
-          end
         end
         
         def jmp(label=nil)
@@ -412,6 +407,11 @@ module Rhizome
           end
         end
 
+        def register_register_operator(opcode, source, dest)
+          encoded = prefix_and_encode_register(source, dest)
+          emit opcode, 0xc0 | encoded
+        end
+        
       end
 
     end

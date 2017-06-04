@@ -150,7 +150,7 @@ module Rhizome
           elsif [0x89, 0x8b].include?(byte)
             next_byte = shift
             r1, r2 = decode_prefix_and_registers(prefix, next_byte, true)
-            if (next_byte & 0b11000000) == 0b01000000
+            if (next_byte & 0xc0) == 0x40
               offset = shift
               offset -= 256 if (offset & 0x80) == 0x80
               if offset.negative?
