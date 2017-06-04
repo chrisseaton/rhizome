@@ -117,7 +117,7 @@ module Rhizome
       # The instructions which can take immediates as inputs on AMD64.
 
       CONVERT_IMMEDIATE_PATTERNS = [
-          [[:int64_shift_left, :int64_shift_right], [:'arg(0)']]
+          [[:int64_shift_left, :int64_shift_right, :int64_add, :int64_and], [:'arg(0)']],
       ]
 
       # An assembler emits machine code bytes for given assembly instructions.
@@ -184,6 +184,16 @@ module Rhizome
         def add(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
             register_register_operator 0x01, source, dest
+          elsif source.is_a?(Value) && dest.is_a?(Register)
+            if source.value >= -128 && source.value <= 128
+              prefix, encoding = dest.prefix_and_encoding
+              emit prefix if prefix
+              emit 0x83
+              emit 0xc0 | encoding
+              emit_sint8 source.value
+            else
+              raise
+            end
           else
             raise
           end
@@ -200,6 +210,16 @@ module Rhizome
         def and(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
             register_register_operator 0x21, source, dest
+          elsif source.is_a?(Value) && dest.is_a?(Register)
+            if source.value >= -128 && source.value <= 128
+              prefix, encoding = dest.prefix_and_encoding
+              emit prefix if prefix
+              emit 0x83
+              emit 0xe0 | encoding
+              emit_sint8 source.value
+            else
+              raise
+            end
           else
             raise
           end

@@ -133,8 +133,13 @@ module Rhizome
             insn = "cmp #{source} #{dest}"
           elsif byte == 0x83
             byte = shift
+            op = {
+                0xf8 => 'cmp',
+                0xc0 => 'add',
+                0xe0 => 'and'
+            }[byte & 0xf8]
             dest, _ = decode_prefix_and_registers(prefix, byte)
-            insn = "cmp 0x#{shift_sint8.to_s(16)} #{dest}"
+            insn = "#{op} 0x#{shift_sint8.to_s(16)} #{dest}"
           elsif [0xd3, 0xc1, 0xd1].include?(byte)
             shifter = byte
             byte = shift

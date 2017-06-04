@@ -324,12 +324,17 @@ module Rhizome
         private
 
         def associative_swap_for_dest(a, b, dest)
-          b, a = a, b if a == dest
+          if b.is_a?(Integer) || a == dest
+            b, a = a, b
+          end
+
           [a, b]
         end
 
         def prepare_input(source)
-          if register?(source)
+          if source.is_a?(Integer)
+            Value.new(source)
+          elsif register?(source)
             operand(source)
           else
             raise
