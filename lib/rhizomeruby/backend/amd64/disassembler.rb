@@ -131,8 +131,8 @@ module Rhizome
             byte = shift
             source, dest = decode_prefix_and_registers(prefix, byte, true)
             insn = "cmp #{source} #{dest}"
-          elsif [0xd3, 0xc1].include?(byte)
-            immediate = byte == 0xc1
+          elsif [0xd3, 0xc1, 0xd1].include?(byte)
+            shifter = byte
             byte = shift
             name = case byte & 0xe8
                      when 0xe8;   'r'
@@ -140,8 +140,10 @@ module Rhizome
                      else;        raise
                    end
             dest, _ = decode_prefix_and_registers(prefix, byte)
-            if immediate
+            if shifter == 0xc1
               insn = "sh#{name} 0x#{shift.to_s(16)} #{dest}"
+            elsif shifter == 0xd1
+              insn = "sh#{name} #{dest}"
             else
               insn = "sh#{name} %cl #{dest}"
             end

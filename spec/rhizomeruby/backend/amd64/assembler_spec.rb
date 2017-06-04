@@ -246,6 +246,11 @@ describe Rhizome::Backend::AMD64::Assembler do
       expect(@assembler.bytes).to eql [0x48, 0xc1, 0xe8, 0x03]
     end
 
+    it 'correctly assembles an immediate of one' do
+      @assembler.shr Rhizome::Backend::AMD64::Value.new(1), Rhizome::Backend::AMD64::RAX
+      expect(@assembler.bytes).to eql [0x48, 0xd1, 0xe8]
+    end
+
     it 'correctly assembles immediates and high registers' do
       @assembler.shr Rhizome::Backend::AMD64::Value.new(3), Rhizome::Backend::AMD64::R13
       expect(@assembler.bytes).to eql [0x49, 0xc1, 0xed, 0x03]
@@ -275,6 +280,11 @@ describe Rhizome::Backend::AMD64::Assembler do
     it 'correctly assembles immediates' do
       @assembler.shl Rhizome::Backend::AMD64::Value.new(3), Rhizome::Backend::AMD64::RAX
       expect(@assembler.bytes).to eql [0x48, 0xc1, 0xe0, 0x03]
+    end
+
+    it 'correctly assembles an immediate of one' do
+      @assembler.shl Rhizome::Backend::AMD64::Value.new(1), Rhizome::Backend::AMD64::RAX
+      expect(@assembler.bytes).to eql [0x48, 0xd1, 0xe0]
     end
 
     it 'correctly assembles immediates and high registers' do

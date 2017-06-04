@@ -220,7 +220,11 @@ module Rhizome
           if shift == RCX
             emit 0xd3, 0xe8 | encoded
           elsif shift.is_a?(Value)
-            emit 0xc1, 0xe8 | encoded, shift.value
+            if shift.value == 1
+              emit 0xd1, 0xe8 | encoded
+            else
+              emit 0xc1, 0xe8 | encoded, shift.value
+            end
           else
             raise
           end
@@ -231,7 +235,11 @@ module Rhizome
           if shift == RCX
             emit 0xd3, 0xe0 | encoded
           elsif shift.is_a?(Value)
-            emit 0xc1, 0xe0 | encoded, shift.value
+            if shift.value == 1
+              emit 0xd1, 0xe0 | encoded
+            else
+              emit 0xc1, 0xe0 | encoded, shift.value
+            end
           else
             raise
           end
