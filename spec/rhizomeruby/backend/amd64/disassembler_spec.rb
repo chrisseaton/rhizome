@@ -209,10 +209,22 @@ describe Rhizome::Backend::AMD64::Disassembler do
           expect(@disassembler.next).to eql '0x0000000000000000  shr %cl %rax                  ; 48 d3 e8'
         end
 
+        it 'immediate to register' do
+          @assembler.shr Rhizome::Backend::AMD64::Value.new(3), Rhizome::Backend::AMD64::RAX
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  shr 0x3 %rax                  ; 48 c1 e8 03'
+        end
+
         it 'register to high register' do
           @assembler.shr Rhizome::Backend::AMD64::RCX, Rhizome::Backend::AMD64::R13
           @disassemble.call
           expect(@disassembler.next).to eql '0x0000000000000000  shr %cl %r13                  ; 49 d3 ed'
+        end
+
+        it 'immediate to high register' do
+          @assembler.shr Rhizome::Backend::AMD64::Value.new(3), Rhizome::Backend::AMD64::R13
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  shr 0x3 %r13                  ; 49 c1 ed 03'
         end
 
       end
@@ -225,10 +237,22 @@ describe Rhizome::Backend::AMD64::Disassembler do
           expect(@disassembler.next).to eql '0x0000000000000000  shl %cl %rax                  ; 48 d3 e0'
         end
 
+        it 'immediate to register' do
+          @assembler.shl Rhizome::Backend::AMD64::Value.new(3), Rhizome::Backend::AMD64::RAX
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  shl 0x3 %rax                  ; 48 c1 e0 03'
+        end
+
         it 'register to high register' do
           @assembler.shl Rhizome::Backend::AMD64::RCX, Rhizome::Backend::AMD64::R13
           @disassemble.call
           expect(@disassembler.next).to eql '0x0000000000000000  shl %cl %r13                  ; 49 d3 e5'
+        end
+
+        it 'immediate to high register' do
+          @assembler.shl Rhizome::Backend::AMD64::Value.new(3), Rhizome::Backend::AMD64::R13
+          @disassemble.call
+          expect(@disassembler.next).to eql '0x0000000000000000  shl 0x3 %r13                  ; 49 c1 e5 03'
         end
 
       end

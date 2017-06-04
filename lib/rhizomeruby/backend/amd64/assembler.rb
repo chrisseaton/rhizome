@@ -216,15 +216,25 @@ module Rhizome
         end
 
         def shr(shift, register)
-          raise unless shift == RCX
           encoded = prefix_and_encode_register(register)
-          emit 0xd3, 0xe8 | encoded
+          if shift == RCX
+            emit 0xd3, 0xe8 | encoded
+          elsif shift.is_a?(Value)
+            emit 0xc1, 0xe8 | encoded, shift.value
+          else
+            raise
+          end
         end
 
         def shl(shift, register)
-          raise unless shift == RCX
           encoded = prefix_and_encode_register(register)
-          emit 0xd3, 0xe0 | encoded
+          if shift == RCX
+            emit 0xd3, 0xe0 | encoded
+          elsif shift.is_a?(Value)
+            emit 0xc1, 0xe0 | encoded, shift.value
+          else
+            raise
+          end
         end
 
         def pop(dest)
