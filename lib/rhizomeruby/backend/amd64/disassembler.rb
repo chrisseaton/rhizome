@@ -131,6 +131,10 @@ module Rhizome
             byte = shift
             source, dest = decode_prefix_and_registers(prefix, byte, true)
             insn = "cmp #{source} #{dest}"
+          elsif byte == 0x83
+            byte = shift
+            dest, _ = decode_prefix_and_registers(prefix, byte)
+            insn = "cmp 0x#{shift_sint8.to_s(16)} #{dest}"
           elsif [0xd3, 0xc1, 0xd1].include?(byte)
             shifter = byte
             byte = shift
@@ -214,6 +218,9 @@ module Rhizome
             source = encoded & 0x7
             dest = nil
             case prefix
+              when nil
+              when REXB
+                source += 8
               when REXW
               when REXWB
                 source += 8
@@ -230,6 +237,10 @@ module Rhizome
           byte = @bytes[@pos]
           @pos += 1
           byte
+        end
+
+        def shift_sint8
+          [shift].pack('c*').unpack('c').first
         end
 
         def shift_sint32

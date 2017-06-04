@@ -208,6 +208,16 @@ module Rhizome
         def cmp(source, dest)
           if source.is_a?(Register) && dest.is_a?(Register)
             register_register_operator 0x39, source, dest
+          elsif source.is_a?(Value) && dest.is_a?(Register)
+            if source.value >= -128 && source.value <= 128
+              prefix, encoding = dest.prefix_and_encoding
+              emit prefix if prefix
+              emit 0x83
+              emit 0xf8 | encoding
+              emit_sint8 source.value
+            else
+              raise
+            end
           else
             raise
           end
@@ -365,6 +375,10 @@ module Rhizome
           values.each do |v|
             bytes.push v & 0xff
           end
+        end
+
+        def emit_sint8(value)
+          emit *[value].pack('c').bytes
         end
 
         def emit_sint32(value)

@@ -148,12 +148,10 @@ module Rhizome
                   value = prepare_input(value)
                   case cond
                     when :int64_zero?
-                      @assembler.mov Value.new(0), SCRATCH_REGISTERS[1]
-                      @assembler.cmp value, SCRATCH_REGISTERS[1]
+                      @assembler.cmp Value.new(0), value
                       @assembler.je labels[target]
                     when :int64_not_zero?
-                      @assembler.mov Value.new(0), SCRATCH_REGISTERS[1]
-                      @assembler.cmp value, SCRATCH_REGISTERS[1]
+                      @assembler.cmp Value.new(0), value
                       @assembler.jne labels[target]
                     else
                       raise
@@ -163,8 +161,7 @@ module Rhizome
                   value = prepare_input(value)
                   case cond
                     when :int64_not_zero?
-                      @assembler.mov Value.new(0), SCRATCH_REGISTERS[1]
-                      @assembler.cmp value, SCRATCH_REGISTERS[1]
+                      @assembler.cmp Value.new(0), value
                       @assembler.je labels[target]
                     else
                       raise
@@ -174,12 +171,10 @@ module Rhizome
                   value = prepare_input(value)
                   case cond
                     when :int64_zero?
-                      @assembler.mov Value.new(0), SCRATCH_REGISTERS[1]
-                      @assembler.cmp value, SCRATCH_REGISTERS[1]
+                      @assembler.cmp Value.new(0), value
                       deopts.push DeoptPoint.new(@assembler.jne, frame_state)
                     when :int64_not_zero?
-                      @assembler.mov Value.new(0), SCRATCH_REGISTERS[1]
-                      @assembler.cmp value, SCRATCH_REGISTERS[1]
+                      @assembler.cmp Value.new(0), value
                       deopts.push DeoptPoint.new(@assembler.je, frame_state)
                     else
                       raise
