@@ -41,15 +41,29 @@ module Rhizome
         # Generate code for a set of linearised basic blocks.
 
         def generate(blocks)
-          # Saved all callee-saved registers - should really just be those that we use.
+          # Find all the registers we're going to use.
 
-          CALLEE_SAVED.each do |r|
+          used_registers = Set.new(blocks.flat_map { |block|
+            block.flat_map { |insn|
+              insn.drop(1).select { |operand| register?(operand) }
+            }
+          })
+
+          used_registers.merge SCRATCH_REGISTERS
+
+          # Saved all callee-saved registers that we use.
+
+          called_saved_used = used_registers.intersection(CALLEE_SAVED).to_a
+          called_saved_used.delete RBP
+          called_saved_used.unshift RBP
+
+          called_saved_used.each do |r|
             @assembler.push r
           end
 
           # The size of the farme is the callee-saved registers plus one for our return address.
 
-          frame_size = CALLEE_SAVED.size + 1
+          frame_size = called_saved_used.size + 1
 
           # Store the start of our actual frame in RBP
 
@@ -256,7 +270,7 @@ module Rhizome
 
                   # Restore caller-saved registers.
 
-                  CALLEE_SAVED.reverse.each do |r|
+                  called_saved_used.reverse.each do |r|
                     @assembler.pop r
                   end
 
@@ -313,7 +327,7 @@ module Rhizome
 
             # Restore caller-saved registers.
 
-            CALLEE_SAVED.reverse.each do |r|
+            called_saved_used.reverse.each do |r|
               @assembler.pop r
             end
 

@@ -80,12 +80,6 @@ module Rhizome
       frame_words = frame_memory.read_words(0, frame_size / Config::WORD_BYTES)
       frame_words.reverse!
 
-      # The top word is the return address - forget about it for now.
-      # We could use this to look up the frame state though, instead
-      # of passing a handle.
-
-      frame_words.pop
-
       raise unless frame_words.size == Backend::AMD64::USER_REGISTERS.size
 
       frame_values = Backend::AMD64::USER_REGISTERS.map { |r| r.name.to_s.downcase.to_sym }.zip(frame_words).to_h
