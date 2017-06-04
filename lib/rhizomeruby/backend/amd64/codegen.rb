@@ -121,19 +121,24 @@ module Rhizome
                   prepare_input_output b, dest
                   @assembler.and a, prepare_output(dest)
                   finish_output dest
-                when :int64_shift_right
+                when :int64_shift_left, :int64_shift_right
                   _, a, b, dest = insn
-                  raise unless SCRATCH_REGISTERS.include?(RCX)
-                  @assembler.mov operand(b), RCX if operand(b) != RCX
                   a = prepare_input_output(a, dest)
-                  @assembler.shr RCX, a
-                  finish_output dest
-                when :int64_shift_left
-                  _, a, b, dest = insn
-                  raise unless SCRATCH_REGISTERS.include?(RCX)
-                  @assembler.mov operand(b), RCX if operand(b) != RCX
-                  a = prepare_input_output(a, dest)
-                  @assembler.shl RCX, a
+                  if b.is_a?(Integer)
+                    if insn.first == :int64_shift_left
+                      @assembler.shl Value.new(b), a
+                    else
+                      @assembler.shr Value.new(b), a
+                    end
+                  else
+                    raise unless SCRATCH_REGISTERS.include?(RCX)
+                    @assembler.mov operand(b), RCX if operand(b) != RCX
+                    if insn.first == :int64_shift_left
+                      @assembler.shl RCX, a
+                    else
+                      @assembler.shr RCX, a
+                    end
+                  end
                   finish_output dest
                 when :jump
                   _, target = insn

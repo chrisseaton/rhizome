@@ -93,6 +93,34 @@ The method name becomes a runtime value, stored in a new constant node and
 passed in as a value to the `call_managed` node, just as the receiver and
 argument nodes are.
 
+### Convert immediates
+
+If a value is a constant it may be possible to encode an instruction with the
+constant embedded directly in the code, rather than loading the value into a
+register and then using the register as an operand. This may reduce register
+pressure, improve the ability of the processor to run instructions in parallel
+as it is one less data flow to track, and reduce code size.
+
+For example, the AMD64, `shl` shift-left instruction can have the number of bits
+by which to shift be specified as a register, a constant value, or even a
+special value of one which has its own encoding.
+
+To help the code generators emit these instructions, the lowering process
+includes an optimisation pass that looks for instructions that can be encoded
+with a constant value and that have a constant as input. It creates a new node
+called an `immediate` rather than a `constant`. Immediate nodes are not subject
+to scheduling, register allocation, or optimisations such as
+global-value-numbering, but they can be read by the code generator when deciding
+how to emit an instruction.
+
+In Rhizome the convert-immediates pass is not specific for one architecture, but
+of course deciding which instructions should have immediate values does depend
+on the architecture. Therefore information about which instructions can have
+immediates is passed into the convert-immediates pass as list of patterns of
+instructions and the arguments which can be immediates. This is similar to how
+some code generation strategies work, as described in the code generation
+document.
+
 ### More technical details
 
 The lowering process is often accompanied with a transition in the data

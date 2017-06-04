@@ -49,6 +49,10 @@ could be achieved with less instructions than operations. One technical involves
 looking at the instructions available on the processor as a set of templates and
 scanning over the graph seeing where they could fit over sets of nodes.
 
+In the document describing lowering we said that we passed the
+convert-immediates pass a list of patterns describing which instructions could
+take immediate values. This is a bit like this idea of a set of templates.
+
 Instruction scheduling is another interesting problem that we haven't tackled in
 Rhizome. We've scheduled the graph, finding out when one node must have run
 before another and encoding that, but we haven't considered what to do with the

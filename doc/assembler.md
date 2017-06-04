@@ -190,7 +190,8 @@ load in one instruction, do an add that only uses registers because that's
 easier to encode, and then store in another instruction.
 
 This means we generate less efficient code, but for the examples we have it
-isn't very important. Some machines with simpler architectures, such as RISC machines or load-store architectures, are always programmed like this.
+isn't very important. Some machines with simpler architectures, such as RISC
+machines or load-store architectures, are always programmed like this.
 
 ### Potential projects
 

@@ -91,7 +91,7 @@ module Rhizome
     # For each value produce an object which says when it is live from and until.
 
     def live_ranges(graph)
-      graph.all_nodes.select(&:produces_value?).map do |producer|
+      graph.all_nodes.select { |n| n.produces_value? && n.op != :immediate }.map do |producer|
         # A value is live from when the node producing it runs...
         start = producer.props[:register_sequence]
 

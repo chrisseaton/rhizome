@@ -56,6 +56,8 @@ module Rhizome
         # Replace nodes with the canonical versions if they aren't it.
 
         value_nodes.each do |n|
+          next if n.op == :immediate
+
           c = canonical[value_identities[n]]
           if c != n
             n.use_instead c

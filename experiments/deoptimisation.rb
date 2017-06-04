@@ -79,7 +79,8 @@ passes_runner = Rhizome::Passes::Runner.new(
     Rhizome::Backend::General::SpecialiseBranches.new,
     Rhizome::Backend::General::ExpandCalls.new,
     Rhizome::Passes::Canonicalise.new,
-    Rhizome::Passes::GlobalValueNumbering.new
+    Rhizome::Passes::GlobalValueNumbering.new,
+    Rhizome::Backend::General::ConvertImmediates.new(Rhizome::Backend::AMD64::CONVERT_IMMEDIATE_PATTERNS)
 )
 
 passes_runner.run graph

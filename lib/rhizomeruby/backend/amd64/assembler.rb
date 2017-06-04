@@ -83,9 +83,6 @@ module Rhizome
         const_set(name, Register.new(name, encoding))
       }
 
-      REGISTERS.each do |r|
-      end
-
       USER_REGISTERS = [RDX, RSI, RDI, R8, R9, R10, R11, RBX, R12, R13, R14, R15]
       SCRATCH_REGISTERS = [RAX, RCX]
       CALLER_SAVED = [RDX, RSI, RDI, R8, R9, R10, R11]
@@ -116,6 +113,12 @@ module Rhizome
       GREATER       = 0xf
       GREATER_EQUAL = 0xd
       OVERFLOW      = 0x0
+
+      # The instructions which can take immediates as inputs on AMD64.
+
+      CONVERT_IMMEDIATE_PATTERNS = [
+          [[:int64_shift_left, :int64_shift_right], [:'arg(0)']]
+      ]
 
       # An assembler emits machine code bytes for given assembly instructions.
 

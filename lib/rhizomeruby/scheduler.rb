@@ -83,7 +83,7 @@ module Rhizome
     def global_schedule(graph)
       # Create a work list of the floating nodes.
 
-      to_schedule = graph.all_nodes.select(&:floating?)
+      to_schedule = graph.all_nodes.select {|n| n.floating? && n.op != :immediate }
 
       # Keep going until the work list is empty.
 
@@ -130,7 +130,7 @@ module Rhizome
     # A node is globally scheduled if it was fixed anyway or we've scheduled it.
 
     def globally_scheduled?(node)
-      node.fixed? || node.outputs.output_names.include?(:global_schedule)
+      node.fixed? || node.op == :immediate || node.outputs.output_names.include?(:global_schedule)
     end
 
     # Find all possible nodes we could anchor a floating node to to globally
@@ -149,7 +149,7 @@ module Rhizome
           # The start node is never a candidate because we're going to schedule
           # before the candidate, and we can't schedule before the start node.
 
-          if candidate.op != :start
+          if ![:start, :immediate].include?(candidate.op)
             # We only consider globally scheduled nodes as candidates.
 
             if globally_scheduled?(candidate)
@@ -352,7 +352,7 @@ module Rhizome
     # A node is locally scheduled if it's fixed or we have locally scheduled it.
 
     def locally_scheduled?(node)
-      node.fixed? || node.outputs.output_names.include?(:local_schedule)
+      node.fixed? || node.op == :immediate || node.outputs.output_names.include?(:local_schedule)
     end
 
     # Linearize a graph into a single linear sequence of operations with jumps
@@ -437,16 +437,22 @@ module Rhizome
 
             # Send instructions and lowered equivalents need the arguments.
             if [:send, :call_managed, :int64_add, :int64_sub, :int64_imul, :int64_and, :int64_shift_left, :int64_shift_right].include?(node.op)
-              insn.push node.inputs.with_input_name(:receiver).from_nodes.first.props[:register]
+              insn.push node.inputs.with_input_name(:receiver).from_node.props[:register]
 
               if node.op == :send
                 insn.push node.props[:name]
               elsif node.op == :call_managed
-                insn.push node.inputs.with_input_name(:name).from_nodes.first.props[:register]
+                insn.push node.inputs.with_input_name(:name).from_node.props[:register]
               end
 
               node.props[:argc].times do |n|
-                insn.push node.inputs.with_input_name(:"arg(#{n})").from_nodes.first.props[:register]
+                arg = node.inputs.with_input_name(:"arg(#{n})").from_node
+
+                if arg.op == :immediate
+                  insn.push arg.props[:value]
+                else
+                  insn.push arg.props[:register]
+                end
               end
             end
 
@@ -458,7 +464,7 @@ module Rhizome
               insn.push node.inputs.with_input_name(:condition).from_node.props[:register]
 
               [:true, :false].each do |branch|
-                target = node.outputs.with_output_name(branch).to_nodes.first
+                target = node.outputs.with_output_name(branch).to_node
                 raise unless target
                 insn.push target
               end

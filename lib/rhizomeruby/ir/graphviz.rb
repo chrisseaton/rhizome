@@ -197,6 +197,8 @@ module Rhizome
             label = "trace(#{node.props[:line]})"
           when :constant
             label = "const(#{node.props[:value]})"
+          when :immediate
+            label = "imm(#{node.props[:value]})"
           when :move
             label = "move #{node.props[:from]}"
           when :branch
