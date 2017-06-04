@@ -26,6 +26,8 @@ require_relative '../spec/rhizomeruby/fixtures'
 
 raise 'this experiment only works on AMD64' unless Rhizome::Config::AMD64
 
+puts 'this experiment would draw graphs if you had Graphviz installed' unless Rhizome::IR::Graphviz.available?
+
 interpreter = Rhizome::Interpreter.new
 profile = Rhizome::Profile.new
 
@@ -52,10 +54,17 @@ passes_runner = Rhizome::Passes::Runner.new(
     Rhizome::Backend::General::AddTagging.new,
     Rhizome::Backend::General::ExpandTagging.new,
     Rhizome::Backend::General::SpecialiseBranches.new,
-    Rhizome::Backend::General::ExpandCalls.new
+    Rhizome::Backend::General::ExpandCalls.new,
+    Rhizome::Passes::Canonicalise.new,
+    Rhizome::Passes::GlobalValueNumbering.new
 )
 
 passes_runner.run graph
+
+if Rhizome::IR::Graphviz.available?
+  viz = Rhizome::IR::Graphviz.new(graph)
+  viz.visualise 'graph.pdf'
+end
 
 scheduler = Rhizome::Scheduler.new
 scheduler.schedule graph
