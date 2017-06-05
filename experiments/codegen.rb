@@ -105,6 +105,8 @@ while disassembler.more?
 end
 
 puts
+puts "#{assembler.size} bytes"
+puts
 puts 'Using the fast path:'
 puts
 puts '14 + 2 = ' + interface.call_native(native_method, nil, 14, 2).to_s

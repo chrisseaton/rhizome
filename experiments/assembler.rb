@@ -60,6 +60,8 @@ assembler.bytes.each_slice(8) do |row|
 end
 
 puts
+puts "#{assembler.size} bytes"
+puts
 
 memory = Rhizome::Memory.new(assembler.size)
 memory.write 0, assembler.bytes

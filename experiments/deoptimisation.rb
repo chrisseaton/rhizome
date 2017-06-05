@@ -120,6 +120,9 @@ while disassembler.more?
   puts disassembler.next
 end
 
+puts
+puts "#{assembler.size} bytes"
+puts
 puts "Installed code to 0x#{memory.address.to_i.to_s(16)}"
 puts
 puts 'Using the fast path:'
