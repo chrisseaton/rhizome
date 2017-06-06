@@ -55,6 +55,23 @@ end
 live_ranges = register_allocator.live_ranges(graph)
 registers = register_allocator.linear_scan(live_ranges)
 
+puts 'Live ranges:'
+puts
+
 live_ranges.each do |range|
-  puts "#{range.producer.op} #{range.start} -> #{range.finish} in #{registers[range]}"
+  puts "#{range.producer.op} #{range.start} -> #{range.finish} in #{registers[range].name}"
+end
+
+registers.each do |range, register|
+  range.producer.props[:register] = register.name.to_s.downcase.to_sym
+end
+
+live_over_calls = register_allocator.live_over_calls(graph, live_ranges, registers)
+
+puts
+puts 'Live on calls:'
+puts
+
+live_over_calls.each_pair do |call, live|
+  puts "#{call.op} @ #{call.props[:register_sequence]} #{live}"
 end

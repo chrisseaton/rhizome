@@ -52,6 +52,16 @@ module Rhizome
       # before a phi.
 
       add_phi_moves graph
+
+      # Work out which registers are live when calls are made.
+
+      live_over_calls = live_over_calls(graph, live_ranges, registers)
+
+      # Annotate the calls with the live registers.
+
+      live_over_calls.each_pair do |call, live|
+        call.props[:live_registers] = live
+      end
     end
 
     # Give all nodes a linear sequence number. A node will always have a higher sequence
@@ -209,6 +219,31 @@ module Rhizome
 
         to_remove.each(&:remove)
       end
+    end
+
+    # On some architectures, such as AMD64, we need to save some registers that have values
+    # in them when we make calls, because the callee can overwrite them. We work out which
+    # registers are live in order to annotate call nodes with the live registers so the
+    # code generator can save them.
+
+    def live_over_calls(graph, live_ranges, registers)
+      calls = {}
+
+      graph.find_nodes(:send, :call_managed) do |call|
+        call_sequence = call.props[:register_sequence]
+
+        live = []
+
+        live_ranges.each do |live_range|
+          if live_range.start < call_sequence && live_range.finish > call_sequence
+            live.push registers[live_range]
+          end
+        end
+
+        calls[call] = live
+      end
+
+      calls
     end
 
   end

@@ -473,6 +473,11 @@ module Rhizome
                 insn.push node.props[:test]
               end
             end
+
+            # Send instructions and lowered managed calls need the list of live registers.
+            if [:send, :call_managed].include?(node.op)
+              insn.push node.props[:live_registers]
+            end
             
             # Guards are like branches, but only have one side.
             if node.op == :guard

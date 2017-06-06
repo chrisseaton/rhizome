@@ -194,12 +194,14 @@ module Rhizome
                       raise
                   end
                 when :call_managed
-                  _, receiver, name, *args, target = insn
+                  _, receiver, name, *args, target, live_registers = insn
 
-                  # Save all caller-saved registers - should really just be those that
-                  # actually have live values in them.
+                  # If we have live values in registers that AMD64 says are callee-saved
+                  # then we need to preserve them by pushing them onto the stack.
 
-                  CALLER_SAVED.each do |r|
+                  live_registers ||= CALLER_SAVED
+
+                  live_registers.each do |r|
                     @assembler.push r
                   end
 
@@ -207,7 +209,7 @@ module Rhizome
                   # plus the arguments. Push another value to align it to 16-byte if
                   # needed.
 
-                  new_frame_size = frame_size + CALLER_SAVED.size + args.size
+                  new_frame_size = frame_size + live_registers.size + args.size
 
                   if new_frame_size % 2 == 1
                     @assembler.push SCRATCH_REGISTERS[0]
@@ -245,10 +247,10 @@ module Rhizome
 
                   @assembler.add Value.new(to_pop * 8), RSP
 
-                  # Restore registers that we preserved
+                  # Restore registers that we saved.
 
-                  CALLER_SAVED.reverse.each do |r|
-                    raise if r == RAX
+                  live_registers.reverse.each do |r|
+                    raise if r == RAX # Don't trash the return value!
                     @assembler.pop r
                   end
 
