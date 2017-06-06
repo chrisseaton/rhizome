@@ -51,11 +51,11 @@ module Rhizome
         end
 
         def to_s
-          name
+          name.to_s
         end
 
         def inspect
-          name
+          name.inspect
         end
 
       end
