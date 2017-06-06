@@ -291,16 +291,30 @@ module Rhizome
           deopts.each do |deopt|
             @assembler.label deopt.label
 
-            # Push all user registers - should really just be those with live values in them.
+            # If we don't have a frame state (we turn them off for some examples) just
+            # emit a breakpoint instead of a deoptimisation routine.
 
-            USER_REGISTERS.each do |r|
-              @assembler.push r
+            unless deopt.frame_state
+              @assembler.int 3
+              next
+            end
+
+            # Push registers that have live values in them so that the deoptimisation
+            # routine can read them off the stack.
+
+            @assembler.mov Value.new(1234), RAX
+            @assembler.push RAX
+
+            @assembler.push operand(deopt.frame_state.receiver)
+
+            deopt.frame_state.args.each do |r|
+              @assembler.push operand(r)
             end
 
             # The frame size now includes those registers - push another value to align to
             # 16-bytes if needs be.
 
-            new_frame_size = frame_size + USER_REGISTERS.size
+            new_frame_size = frame_size + deopt.frame_state.args.size
 
             if new_frame_size % 2 == 1
               @assembler.push SCRATCH_REGISTERS[0]
@@ -318,10 +332,9 @@ module Rhizome
             # Don't trash the return value!
 
             raise if SCRATCH_REGISTERS[1] == RAX
-            raise if USER_REGISTERS.include?(RAX)
 
-            # Restore the caller's stack pointer. This will pop off the registers
-            # and possible alignment value that we pushed.
+            # Restore the caller's stack pointer. This will pop off the registers that
+            # we pushed for live values.
 
             @assembler.mov RBP, RSP
 

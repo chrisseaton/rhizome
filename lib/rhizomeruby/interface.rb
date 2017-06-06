@@ -73,33 +73,35 @@ module Rhizome
     # Continue in the intepreter (called from native).
 
     def continue_in_interpreter(frame_pointer, stack_pointer, frame_state_handle)
-      # Get the frame as a map of stack values as the graph describes them.
+      # Get the frame as a list of values.
 
       frame_size = frame_pointer - stack_pointer
       frame_memory = Memory.new(frame_size, stack_pointer)
       frame_words = frame_memory.read_words(0, frame_size / Config::WORD_BYTES)
-      frame_words.reverse!
-
-      raise unless frame_words.size == Backend::AMD64::USER_REGISTERS.size
-
-      frame_values = Backend::AMD64::USER_REGISTERS.map { |r| r.name.to_s.downcase.to_sym }.zip(frame_words).to_h
 
       # Get the frame state as a Ruby object.
 
       frame_state = @handles.from_native(frame_state_handle)
-      
-      # Get the receiver, arguments, stack, and locals, from the frame.
 
-      receiver = @handles.from_native(frame_values[frame_state.receiver])
+      # Read off the arguments.
 
-      args = frame_state.args.map do |arg|
-        @handles.from_native(frame_values[arg])
+      args = []
+
+      frame_state.args.size.times do
+        args.unshift @handles.from_native(frame_words.shift)
       end
+
+      # Read off the receiver.
+
+      receiver = @handles.from_native(frame_words.shift)
+
+      # Here we would read off the stack and locals, but at the moment we only deoptimise
+      # at the start of a method, so there aren't any.
 
       stack = []
       locals = {}
       
-      # Continue in the intepreter!
+      # Continue in the interpreter!
 
       interpreter = Interpreter.new
       value = interpreter.interpret(frame_state.insns, receiver, args, nil, frame_state.ip, stack, locals)
