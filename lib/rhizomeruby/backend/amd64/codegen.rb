@@ -77,11 +77,14 @@ module Rhizome
             labels[:"block#{n}"] = General::Label.new(@assembler)
           end
           
-          # Build up an array of deoptimisation points to emit at the end of
+          # Build up a map of deoptimisation points to emit at the end of
           # the method, when all the fast-path code is out of the way, and
-          # keep track of the current frame state.
-          
-          deopts = []
+          # keep track of the current frame state. It's a map so we can
+          # look up if we've already created a deoptimisation point for
+          # a given frame state - we don't want to create multiple
+          # deoptimisation points that all actually do the same thing.
+
+          deopts = {}
           frame_state = nil
 
           # Emit code for each basic block.
@@ -186,12 +189,18 @@ module Rhizome
                   case cond
                     when :int64_zero?
                       @assembler.cmp Value.new(0), value
-                      deopts.push DeoptPoint.new(@assembler.jne, frame_state)
+                      instruction = :jne
                     when :int64_not_zero?
                       @assembler.cmp Value.new(0), value
-                      deopts.push DeoptPoint.new(@assembler.je, frame_state)
+                      instruction = :je
                     else
                       raise
+                  end
+                  deopt_point = deopts[frame_state]
+                  if deopt_point
+                    @assembler.send instruction, deopt_point.label
+                  else
+                    deopts[frame_state] = DeoptPoint.new(@assembler.send(instruction), frame_state)
                   end
                 when :call_managed
                   _, receiver, name, *args, target, live_registers = insn
@@ -288,7 +297,7 @@ module Rhizome
           
           # Now emit all deoptimisation routines.
           
-          deopts.each do |deopt|
+          deopts.each_value do |deopt|
             @assembler.label deopt.label
 
             # If we don't have a frame state (we turn them off for some examples) just
