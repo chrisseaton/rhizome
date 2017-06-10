@@ -232,10 +232,10 @@ module Rhizome
 
                   # Push the method name and the receiver.
 
-                  @assembler.mov operand(name), SCRATCH_REGISTERS[0]
-                  @assembler.push SCRATCH_REGISTERS[0]
-                  @assembler.mov operand(receiver), SCRATCH_REGISTERS[0]
-                  @assembler.push SCRATCH_REGISTERS[0]
+                  raise unless register?(name)
+                  @assembler.push operand(name)
+                  raise unless register?(receiver)
+                  @assembler.push operand(receiver)
 
                   # The first argument is then the current stack pointer, and the second is the number of arguments.
 
