@@ -70,7 +70,7 @@ module Rhizome
       @handles.to_native(ret)
     end
 
-    # Continue in the intepreter (called from native).
+    # Continue in the interpreter (called from native).
 
     def continue_in_interpreter(frame_pointer, stack_pointer, frame_state_handle)
       # Get the frame as a list of values.
@@ -111,6 +111,10 @@ module Rhizome
       # we don't have any to exercise this so we haven't implemented it.
 
       locals = {}
+
+      # A hook method allows you to see the how we will continue in the interpreter.
+
+      send :before_continue, frame_state, receiver, args, stack, locals if respond_to?(:before_continue)
 
       # Continue in the interpreter!
 

@@ -120,6 +120,16 @@ while disassembler.more?
   puts disassembler.next
 end
 
+def interface.before_continue(frame_state, receiver, args, stack, locals)
+  puts 'Going to continue in the interpreter:'
+  puts "  ip:       #{frame_state.ip}"
+  puts "  receiver: #{receiver.inspect}"
+  puts "  args:     #{args.inspect}"
+  puts "  stack:    #{stack.inspect}"
+  puts "  locals:   #{locals.inspect}"
+  puts
+end
+
 puts
 puts "#{assembler.size} bytes"
 puts
