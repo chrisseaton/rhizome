@@ -27,8 +27,8 @@ module Rhizome
 
       # Code generation for AMD64.
 
-      DeoptPoint = Struct.new(:label, :frame_state)
-      FrameStateGen = Struct.new(:insns, :ip, :receiver, :args, :stack)
+      DeoptPoint = Struct.new(:label, :deopt_map)
+      DeoptMapGen = Struct.new(:insns, :ip, :receiver, :args, :stack)
 
       class Codegen
 
@@ -61,7 +61,7 @@ module Rhizome
             @assembler.push r
           end
 
-          # The size of the farme is the callee-saved registers plus one for our return address.
+          # The size of the frame is the callee-saved registers plus one for our return address.
 
           frame_size = called_saved_used.size + 1
 
@@ -79,13 +79,13 @@ module Rhizome
           
           # Build up a map of deoptimisation points to emit at the end of
           # the method, when all the fast-path code is out of the way, and
-          # keep track of the current frame state. It's a map so we can
+          # keep track of the current deoptimisation map. It's a map so we can
           # look up if we've already created a deoptimisation point for
-          # a given frame state - we don't want to create multiple
+          # a given deoptimisation map - we don't want to create multiple
           # deoptimisation points that all actually do the same thing.
 
           deopts = {}
-          frame_state = nil
+          deopt_map = nil
 
           # Emit code for each basic block.
 
@@ -196,11 +196,11 @@ module Rhizome
                     else
                       raise
                   end
-                  deopt_point = deopts[frame_state]
+                  deopt_point = deopts[deopt_map]
                   if deopt_point
                     @assembler.send instruction, deopt_point.label
                   else
-                    deopts[frame_state] = DeoptPoint.new(@assembler.send(instruction), frame_state)
+                    deopts[deopt_map] = DeoptPoint.new(@assembler.send(instruction), deopt_map)
                   end
                 when :call_managed
                   _, receiver, name, *args, target, live_registers = insn
@@ -284,9 +284,9 @@ module Rhizome
                   end
 
                   @assembler.ret
-                when :frame_state
+                when :deopt_map
                   _, insns, ip, receiver, args, stack = insn
-                  frame_state = FrameStateGen.new(insns, ip, receiver, args, stack)
+                  deopt_map = DeoptMapGen.new(insns, ip, receiver, args, stack)
                 when :nop
                   # Emit nothing - doesn't also need a machine nop instruction.
                 else
@@ -300,10 +300,10 @@ module Rhizome
           deopts.each_value do |deopt|
             @assembler.label deopt.label
 
-            # If we don't have a frame state (we turn them off for some examples) just
+            # If we don't have a deoptimisation map (we turn them off for some examples) just
             # emit a breakpoint instead of a deoptimisation routine.
 
-            unless deopt.frame_state
+            unless deopt.deopt_map
               @assembler.int 3
               next
             end
@@ -314,32 +314,32 @@ module Rhizome
             @assembler.mov Value.new(1234), RAX
             @assembler.push RAX
 
-            @assembler.push operand(deopt.frame_state.receiver)
+            @assembler.push operand(deopt.deopt_map.receiver)
 
-            deopt.frame_state.args.each do |r|
+            deopt.deopt_map.args.each do |r|
               @assembler.push operand(r)
             end
 
-            deopt.frame_state.stack.each do |r|
+            deopt.deopt_map.stack.each do |r|
               @assembler.push operand(r)
             end
 
             # The frame size now includes those registers - push another value to align to
             # 16-bytes if needs be.
 
-            new_frame_size = frame_size + deopt.frame_state.args.size + deopt.frame_state.stack.size
+            new_frame_size = frame_size + deopt.deopt_map.args.size + deopt.deopt_map.stack.size
 
             if new_frame_size % 2 == 1
               @assembler.push SCRATCH_REGISTERS[0]
             end
 
             # Call the continue-in-interpreter routine, giving it the address of the
-            # stack so it can read it, and the frame state so it can understand the
+            # stack so it can read it, and the deoptimisation map so it can understand the
             # values on the stack.
 
             @assembler.mov RBP, RDI
             @assembler.mov RSP, RSI
-            @assembler.mov Handle.new(deopt.frame_state), RDX
+            @assembler.mov Handle.new(deopt.deopt_map), RDX
             @assembler.call Value.new(@interface.continue_in_interpreter_address)
 
             # Don't trash the return value!

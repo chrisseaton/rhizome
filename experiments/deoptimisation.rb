@@ -35,7 +35,7 @@ profile = Rhizome::Profile.new
   interpreter.interpret Rhizome::Fixtures::ADD_WITH_SIDE_EFFECTS_BYTECODE_RHIZOME, Rhizome::Fixtures, [14, 2], profile
 end
 
-builder = Rhizome::IR::Builder.new(build_frame_states: true)
+builder = Rhizome::IR::Builder.new(build_deopt_maps: true)
 builder.build Rhizome::Fixtures::ADD_WITH_SIDE_EFFECTS_BYTECODE_RHIZOME, profile
 graph = builder.graph
 
@@ -120,9 +120,9 @@ while disassembler.more?
   puts disassembler.next
 end
 
-def interface.before_continue(frame_state, receiver, args, stack, locals)
+def interface.before_continue(deopt_map, receiver, args, stack, locals)
   puts 'Going to continue in the interpreter:'
-  puts "  ip:       #{frame_state.ip}"
+  puts "  ip:       #{deopt_map.ip}"
   puts "  receiver: #{receiver.inspect}"
   puts "  args:     #{args.inspect}"
   puts "  stack:    #{stack.inspect}"

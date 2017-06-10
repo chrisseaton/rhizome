@@ -72,22 +72,22 @@ module Rhizome
 
     # Continue in the interpreter (called from native).
 
-    def continue_in_interpreter(frame_pointer, stack_pointer, frame_state_handle)
+    def continue_in_interpreter(frame_pointer, stack_pointer, deopt_map_handle)
       # Get the frame as a list of values.
 
       frame_size = frame_pointer - stack_pointer
       frame_memory = Memory.new(frame_size, stack_pointer)
       frame_words = frame_memory.read_words(0, frame_size / Config::WORD_BYTES)
 
-      # Get the frame state as a Ruby object.
+      # Get the deoptimisation map as a Ruby object.
 
-      frame_state = @handles.from_native(frame_state_handle)
+      deopt_map = @handles.from_native(deopt_map_handle)
 
       # Read off the stack.
 
       stack = []
 
-      frame_state.stack.size.times do
+      deopt_map.stack.size.times do
         stack.unshift @handles.from_native(frame_words.shift)
       end
 
@@ -99,7 +99,7 @@ module Rhizome
 
       args = []
 
-      frame_state.args.size.times do
+      deopt_map.args.size.times do
         args.unshift @handles.from_native(frame_words.shift)
       end
 
@@ -114,12 +114,12 @@ module Rhizome
 
       # A hook method allows you to see the how we will continue in the interpreter.
 
-      send :before_continue, frame_state, receiver, args, stack, locals if respond_to?(:before_continue)
+      send :before_continue, deopt_map, receiver, args, stack, locals if respond_to?(:before_continue)
 
       # Continue in the interpreter!
 
       interpreter = Interpreter.new
-      value = interpreter.interpret(frame_state.insns, receiver, args, nil, frame_state.ip, stack, locals)
+      value = interpreter.interpret(deopt_map.insns, receiver, args, nil, deopt_map.ip, stack, locals)
 
       @handles.to_native(value)
     end

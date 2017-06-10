@@ -207,8 +207,8 @@ module Rhizome
             else
               label = 'branch'
             end
-          when :frame_state
-            label = "frame_state @#{node.props[:ip]}"
+          when :deopt_map
+            label = "deopt_map @#{node.props[:ip]}"
           else
             label = node.op.to_s
         end
@@ -230,7 +230,7 @@ module Rhizome
       # graph. Use interesting labels, or nothing at all.
 
       def edge_label(edge)
-        frame_state = edge.names.all? { |n| n == :frame_state}
+        deopt_map = edge.names.all? { |n| n == :deopt_map}
         all_control = edge.names.all? { |n| n == :control}
         any_control = edge.names.any? { |n| n == :control}
         all_schedule = edge.names.all? { |n| [:global_schedule, :local_schedule].include?(n)}
@@ -239,7 +239,7 @@ module Rhizome
         merge_or_phi = [:merge, :phi].include?(edge.to.op)
         merge_to_phi = edge.from.op == :merge && edge.to.op == :phi
 
-        if frame_state || ((all_control || all_value) && !merge_or_phi) || merge_to_phi || all_schedule
+        if deopt_map || ((all_control || all_value) && !merge_or_phi) || merge_to_phi || all_schedule
           nil
         elsif [:merge, :phi].include?(edge.to.op)
           edge.input_name =~ /\w+\((.+)\)/
@@ -260,7 +260,7 @@ module Rhizome
           else
             :red
           end
-        elsif [edge.from.op, edge.to.op].include?(:frame_state)
+        elsif [edge.from.op, edge.to.op].include?(:deopt_map)
           :purple
         else
           :blue

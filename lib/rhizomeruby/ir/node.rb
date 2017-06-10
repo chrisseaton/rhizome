@@ -155,7 +155,7 @@ module Rhizome
 
       def self.replace_multiple(existing_start, existing_finish, start, finish=start, users=[start], value=finish, user_input_name=nil)
         existing_start.inputs.edges.each do |edge|
-          if edge.control? || edge.frame_state?
+          if edge.control? || edge.deopt_map?
             edge.from.output_to edge.output_name, start, edge.input_name
           else
             users.each do |user|
@@ -165,7 +165,7 @@ module Rhizome
         end
 
         existing_finish.outputs.edges.each do |edge|
-          if edge.control? || edge.frame_state?
+          if edge.control? || edge.deopt_map?
             finish.output_to edge.output_name, edge.to, edge.input_name
           else
             value.output_to edge.output_name, edge.to, edge.input_name
@@ -228,10 +228,10 @@ module Rhizome
         names.any? { |n| n.to_s.start_with?('control') }
       end
 
-      # Is this an edge to a frame state?
+      # Is this an edge to a deoptimisation map?
 
-      def frame_state?
-        names.any? { |n| n == :frame_state }
+      def deopt_map?
+        names.any? { |n| n == :deopt_map }
       end
 
       # Is this a schedule edge?

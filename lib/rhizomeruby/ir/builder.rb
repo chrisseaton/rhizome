@@ -30,8 +30,8 @@ module Rhizome
 
       attr_reader :graph
 
-      def initialize(build_frame_states: false)
-        @build_frame_states = build_frame_states
+      def initialize(build_deopt_maps: false)
+        @build_deopt_maps = build_deopt_maps
         @graph = Graph.new
       end
 
@@ -311,9 +311,9 @@ module Rhizome
         names_in = {}
         stack_in = []
 
-        # Create an initial frame state.
+        # Create an initial deoptimisation map.
 
-        frame_state = FrameStateBuilder.new(insns, ip, names_in.dup, stack_in.dup)
+        deopt_map = FrameStateBuilder.new(insns, ip, names_in.dup, stack_in.dup)
 
         last_node = nil
         last_control = merge
@@ -421,16 +421,16 @@ module Rhizome
               raise 'unknown instruction'
           end
 
-          # Does this instruction need a frame state becuase it could deoptimise?
+          # Does this instruction need a deoptimisation map becuase it could deoptimise?
 
-          if @build_frame_states && [:send].include?(insn.first)
-            # Create a frame state node?
+          if @build_deopt_maps && [:send].include?(insn.first)
+            # Create a deoptimisation map node?
             
-            frame_state_node = Node.new(:frame_state, insns: frame_state.insns, ip: frame_state.ip)
+            deopt_map_node = Node.new(:deopt_map, insns: deopt_map.insns, ip: deopt_map.ip)
 
             # Send the value of the receiver to it.
 
-            Node.new(:self).output_to :value, frame_state_node, :receiver
+            Node.new(:self).output_to :value, deopt_map_node, :receiver
 
             # Send the value of all arguments to it.
 
@@ -443,24 +443,24 @@ module Rhizome
             end
 
             args_count.times do |n|
-              Node.new(:arg, n: n).output_to :value, frame_state_node, :"arg(#{n})"
+              Node.new(:arg, n: n).output_to :value, deopt_map_node, :"arg(#{n})"
             end
             
             # Send the value of all names to it.
 
-            frame_state.names.each_pair do |name, value|
-              value.output_to :value, frame_state_node, name
+            deopt_map.names.each_pair do |name, value|
+              value.output_to :value, deopt_map_node, name
             end
             
             # Send all values on the stack to it.
 
-            frame_state.stack.each_with_index do |value, index|
-              value.output_to :value, frame_state_node, :"stack(#{index})"
+            deopt_map.stack.each_with_index do |value, index|
+              value.output_to :value, deopt_map_node, :"stack(#{index})"
             end
             
-            # Add the frame state to the instruction by adding a special edge.
+            # Add the deoptimisation map to the instruction by adding a special edge.
 
-            frame_state_node.output_to :frame_state, last_node
+            deopt_map_node.output_to :deopt_map, last_node
           end
 
           # The trace and send instructions have side effects - link them into
@@ -475,10 +475,10 @@ module Rhizome
           end
 
           # If this instruction potentially has side-effects, create a new
-          # frame state for the state after the instruction.
+          # deoptimisation map for the state after the instruction.
 
           if [:send].include?(insn.first)
-            frame_state = FrameStateBuilder.new(insns, ip + n + 1, names.dup, stack.dup)
+            deopt_map = FrameStateBuilder.new(insns, ip + n + 1, names.dup, stack.dup)
           end
         end
 

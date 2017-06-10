@@ -495,7 +495,7 @@ module Rhizome
   
             # Frame states need the instructions, the ip, and to know where values are for
             # the receiver, the arguments, and the stack.
-            if node.op == :frame_state
+            if node.op == :deopt_map
               insn.push node.props[:insns]
               insn.push node.props[:ip]
               insn.push node.inputs.with_input_name(:receiver).from_node.props[:register]
