@@ -53,6 +53,10 @@ describe Rhizome::Frontend::MRIParser do
         expect(@parser.text_for(Rhizome::Fixtures.method(:redundant_multiply))).to be == Rhizome::Fixtures::REDUNDANT_MULTIPLY_BYTECODE_MRI
       end
 
+      it 'returns the text for the bytecode for an add with side effects method' do
+        expect(@parser.text_for(Rhizome::Fixtures.method(:add_with_side_effects))).to be == Rhizome::Fixtures::ADD_WITH_SIDE_EFFECTS_BYTECODE_MRI
+      end
+
     end
 
   end
@@ -77,6 +81,10 @@ describe Rhizome::Frontend::MRIParser do
 
     it 'parses the text for a redundant multiply method' do
       expect(@parser.parse(Rhizome::Fixtures::REDUNDANT_MULTIPLY_BYTECODE_MRI)).to be == Rhizome::Fixtures::REDUNDANT_MULTIPLY_BYTECODE_RHIZOME
+    end
+
+    it 'parses the text for an add with side effects method' do
+      expect(@parser.parse(Rhizome::Fixtures::ADD_WITH_SIDE_EFFECTS_BYTECODE_MRI)).to be == Rhizome::Fixtures::ADD_WITH_SIDE_EFFECTS_BYTECODE_RHIZOME
     end
 
   end

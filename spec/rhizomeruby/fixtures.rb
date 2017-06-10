@@ -61,6 +61,17 @@ module Rhizome
       x * x + x * x
     end
 
+    def self.side_effect(n)
+      # We could perform some side-effect in this method - we don't, and we'll
+      # just return the value, but unless the compiler inlines this method it
+      # won't know that and will have to treat it as potentially do anything.
+      n
+    end
+
+    def self.add_with_side_effects(a, b)
+      side_effect(a) + side_effect(b)
+    end
+
     ADD_BYTECODE_MRI = <<END
 local table (size: 2, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
 [ 2] a<Arg>     [ 1] b<Arg>     
@@ -172,6 +183,22 @@ local table (size: 1, argc: 1 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1,
 0018 opt_plus         <callinfo!mid:+, argc:1, ARGS_SIMPLE>, <callcache>
 0021 trace            16                                              (  62)
 0023 leave                                                            (  61)
+CODE
+
+    ADD_WITH_SIDE_EFFECTS_BYTECODE_MRI = <<CODE
+local table (size: 2, argc: 2 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+[ 2] a<Arg>     [ 1] b<Arg>     
+0000 trace            8                                               (  71)
+0002 trace            1                                               (  72)
+0004 putself          
+0005 getlocal_OP__WC__0 4
+0007 opt_send_without_block <callinfo!mid:side_effect, argc:1, FCALL|ARGS_SIMPLE>, <callcache>
+0010 putself          
+0011 getlocal_OP__WC__0 3
+0013 opt_send_without_block <callinfo!mid:side_effect, argc:1, FCALL|ARGS_SIMPLE>, <callcache>
+0016 opt_plus         <callinfo!mid:+, argc:1, ARGS_SIMPLE>, <callcache>
+0019 trace            16                                              (  73)
+0021 leave                                                            (  72)
 CODE
 
     ADD_BYTECODE_RBX = <<END
@@ -366,6 +393,24 @@ END
         [:send,     :+,   1 ],
         [:trace,    62      ],
         [:return            ]
+    ]
+
+    ADD_WITH_SIDE_EFFECTS_BYTECODE_RHIZOME = [
+        [:arg,      0                 ],
+        [:store,    :a                ],
+        [:arg,      1                 ],
+        [:store,    :b                ],
+        [:trace,    71                ],
+        [:trace,    72                ],
+        [:self                        ],
+        [:load,     :a                ],
+        [:send,     :side_effect, 1   ],
+        [:self                        ],
+        [:load,     :b                ],
+        [:send,     :side_effect, 1   ],
+        [:send,     :+,           1   ],
+        [:trace,    73                ],
+        [:return                      ]
     ]
 
     def self.mask_traces(insns)
