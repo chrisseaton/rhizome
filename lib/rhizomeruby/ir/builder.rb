@@ -478,7 +478,7 @@ module Rhizome
           # frame state for the state after the instruction.
 
           if [:send].include?(insn.first)
-            frame_state = FrameStateBuilder.new(insns, ip + n, names.dup, stack.dup)
+            frame_state = FrameStateBuilder.new(insns, ip + n + 1, names.dup, stack.dup)
           end
         end
 

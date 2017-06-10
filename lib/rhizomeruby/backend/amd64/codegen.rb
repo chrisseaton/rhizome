@@ -28,7 +28,7 @@ module Rhizome
       # Code generation for AMD64.
 
       DeoptPoint = Struct.new(:label, :frame_state)
-      FrameStateGen = Struct.new(:insns, :ip, :receiver, :args)
+      FrameStateGen = Struct.new(:insns, :ip, :receiver, :args, :stack)
 
       class Codegen
 
@@ -276,8 +276,8 @@ module Rhizome
 
                   @assembler.ret
                 when :frame_state
-                  _, insns, ip, receiver, args = insn
-                  frame_state = FrameStateGen.new(insns, ip, receiver, args)
+                  _, insns, ip, receiver, args, stack = insn
+                  frame_state = FrameStateGen.new(insns, ip, receiver, args, stack)
                 when :nop
                   # Emit nothing - doesn't also need a machine nop instruction.
                 else
@@ -311,10 +311,14 @@ module Rhizome
               @assembler.push operand(r)
             end
 
+            deopt.frame_state.stack.each do |r|
+              @assembler.push operand(r)
+            end
+
             # The frame size now includes those registers - push another value to align to
             # 16-bytes if needs be.
 
-            new_frame_size = frame_size + deopt.frame_state.args.size
+            new_frame_size = frame_size + deopt.frame_state.args.size + deopt.frame_state.stack.size
 
             if new_frame_size % 2 == 1
               @assembler.push SCRATCH_REGISTERS[0]

@@ -32,11 +32,11 @@ interpreter = Rhizome::Interpreter.new
 profile = Rhizome::Profile.new
 
 100.times do
-  interpreter.interpret Rhizome::Fixtures::ADD_BYTECODE_RHIZOME, Rhizome::Fixtures, [14, 2], profile
+  interpreter.interpret Rhizome::Fixtures::ADD_WITH_SIDE_EFFECTS_BYTECODE_RHIZOME, Rhizome::Fixtures, [14, 2], profile
 end
 
 builder = Rhizome::IR::Builder.new(build_frame_states: true)
-builder.build Rhizome::Fixtures::ADD_BYTECODE_RHIZOME, profile
+builder.build Rhizome::Fixtures::ADD_WITH_SIDE_EFFECTS_BYTECODE_RHIZOME, profile
 graph = builder.graph
 
 if Rhizome::IR::Graphviz.available?

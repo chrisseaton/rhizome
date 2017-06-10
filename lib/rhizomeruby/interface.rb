@@ -83,7 +83,19 @@ module Rhizome
 
       frame_state = @handles.from_native(frame_state_handle)
 
-      # Read off the arguments.
+      # Read off the stack.
+
+      stack = []
+
+      frame_state.stack.size.times do
+        stack.unshift @handles.from_native(frame_words.shift)
+      end
+
+      # Read off the arguments. Note that if the arguments have been used at this
+      # point in the program then registers that they were using we may have
+      # been re-allocated to store a different value, which is what we're now
+      # reading instead of the argument. However that only happens if we're beyond
+      # the point where we need the arguments, so it shouldn't matter.
 
       args = []
 
@@ -95,12 +107,11 @@ module Rhizome
 
       receiver = @handles.from_native(frame_words.shift)
 
-      # Here we would read off the stack and locals, but at the moment we only deoptimise
-      # at the start of a method, so there aren't any.
+      # Here we would read off the values of local variables, but in our examples
+      # we don't have any to exercise this so we haven't implemented it.
 
-      stack = []
       locals = {}
-      
+
       # Continue in the interpreter!
 
       interpreter = Interpreter.new

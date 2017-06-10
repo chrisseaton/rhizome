@@ -493,7 +493,8 @@ module Rhizome
               insn.push node.props[:kind]
             end
   
-            # Frame states need the instructions, the ip, and to know where all values are.
+            # Frame states need the instructions, the ip, and to know where values are for
+            # the receiver, the arguments, and the stack.
             if node.op == :frame_state
               insn.push node.props[:insns]
               insn.push node.props[:ip]
@@ -501,6 +502,11 @@ module Rhizome
 
               insn.push node.inputs.edges.select { |e| e.input_name.to_s.start_with?('arg(') }.map { |e|
                 /arg\((\d+)\)/ =~ e.input_name.to_s
+                [$1.to_i, e.from.props[:register]]
+              }.sort_by { |pair| pair.first }.map { |pair| pair.last }
+
+              insn.push node.inputs.edges.select { |e| e.input_name.to_s.start_with?('stack(') }.map { |e|
+                /stack\((\d+)\)/ =~ e.input_name.to_s
                 [$1.to_i, e.from.props[:register]]
               }.sort_by { |pair| pair.first }.map { |pair| pair.last }
             end
