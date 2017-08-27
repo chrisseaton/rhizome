@@ -71,9 +71,9 @@ module Rhizome
             when /(\d+)\s+putself/
               insns.push [:self]
             when /(\d+)\s+getlocal_OP__WC__0\s+(\d+)/
-              insns.push [:load, locals[argc + size - $2.to_i]]
+              insns.push [:load, local(size, locals, $2.to_i)]
             when /(\d+)\s+setlocal_OP__WC__0\s+(\d+)/
-              insns.push [:store, locals[argc + size - $2.to_i]]
+              insns.push [:store, local(size, locals, $2.to_i)]
             when /(\d+)\s+putobject\s+(-?\d+)/
               insns.push [:push, $2.to_i]
             when /(\d+)\s+putobject_OP_INT2FIX_O_(\d+)_C_/
@@ -105,6 +105,16 @@ module Rhizome
         end
 
         insns
+      end
+      
+      # Get a local variable by name rather than by number.
+      
+      def local(size, locals, id)
+        # I don't understand the scheme to translating the number in the getlocal and setlocal instructions to local
+        # variable indicies. This seems to work for the examples that we have. Please fix if you understand it!
+        local = locals[2 + size - id]
+        raise unless local
+        local
       end
 
     end
