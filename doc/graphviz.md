@@ -86,7 +86,7 @@ text equivalent it's very hard to understand the structure of the graph.
 ### More technical details
 
 I'm not sure exactly what algorithm the Graphviz dot layout program uses, but
-they have [documented it](http://www.graphviz.org/Documentation/EGKNW03.pdf).
+they have [documented it](https://link.springer.com/content/pdf/10.1007%2F3-540-45848-4_19.pdf).
 It's extremely impressive that they can make structure from a raw description of
 the graph.
 
@@ -96,7 +96,7 @@ the intermediate representation used by the server compiler (also called 'C2',
 the one you get with the `-server` flag) in the HotSpot JVM, but it can now be
 used with other graphical compilers such as Graal.
 
-[igv]: http://ssw.jku.at/Research/Papers/Wuerthinger07Master/Wuerthinger07Master.pdf
+[igv]: https://ssw.jku.at/Research/Papers/Wuerthinger07Master/Wuerthinger07Master.pdf
 
 The Turbofan tier of the V8 just-in-time compiler for JavaScript has a
 visualiser called

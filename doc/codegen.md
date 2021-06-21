@@ -68,7 +68,7 @@ To give you an idea of the scale of the complexity, Intel publishes a 690-page
 [Software Optimization Reference Manual](manual) explaining how to produce
 efficient code for their processors.
 
-[manual]: https://software.intel.com/en-us/articles/intel-sdm
+[manual]: https://software.intel.com/content/www/us/en/develop/articles/intel-sdm.html
 
 Just-in-time compilers have an advantage here, in that they can look at what
 processor you really have an adapt their code generation to it, rather than

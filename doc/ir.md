@@ -249,7 +249,7 @@ It is the C2 compiler's IR on which Rhizome's is based in terms of structure,
 but not implementation details. C2's IR is described in papers [1](sea) and
 [2](c2) by the original designer, Cliff Click, and others.
 
-[sea]: http://grothoff.org/christian/teaching/2007/3353/papers/click95simple.pdf
+[sea]: https://grothoff.org/christian/teaching/2007/3353/papers/click95simple.pdf
 [c2]: https://www.usenix.org/legacy/events/jvm01/full_papers/paleczny/paleczny.pdf
 
 Graphical IR's like Rhizome's are a form of 'program dependence graph'. I'm not
@@ -258,7 +258,7 @@ within basic blocks and nodes did not usually flow between basics. I believe
 that the [`libFirm`](firm) library for writing compilers is a graphical IR but
 with this restriction that each basic block is its own little graph.
 
-[firm]: http://pp.ipd.kit.edu/firm/
+[firm]: https://pp.ipd.kit.edu/firm/
 
 It's possible that graphical IRs use more memory and cause more indirect memory
 accesses which defeat your processor's caches, which is one reason why they may

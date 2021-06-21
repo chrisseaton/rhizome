@@ -160,7 +160,7 @@ name can be varied dynamically by using a call to `Kernel#send` which takes the
 method name as a parameter.
 
 [dispatch-chains]: 
-http://chrisseaton.com/rubytruffle/pldi15-metaprogramming/pldi15-marr-et-al-zero-overhead-metaprogramming.pdf
+https://chrisseaton.com/rubytruffle/pldi15-metaprogramming/pldi15-marr-et-al-zero-overhead-metaprogramming.pdf
 
 ### Potential projects
 
