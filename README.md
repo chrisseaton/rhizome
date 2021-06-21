@@ -2,7 +2,7 @@
 
 ![graph of a simple add function](logo/rhizomeruby-small.png)
 
-Rhizome is a paedological just-in-time compiler (JIT) for Ruby, implemented in pure Ruby. It's not really desigend to be used. It's designed to show you how JITs work and why perhaps a JIT for Ruby should be written in Ruby. It's also designed to try to go beyond the trivial aspects of a simple template compiler that introductions to JITs often show - instead it has a proper intermediate representation (IR) and shows how more advanced parts of compilers such as lowering and schedulers work, that people don't usually cover.
+Rhizome is a paedological just-in-time compiler (JIT) for Ruby, implemented in pure Ruby. It's not really designed to be used. It's designed to show you how JITs work and why perhaps a JIT for Ruby should be written in Ruby. It's also designed to try to go beyond the trivial aspects of a simple template compiler that introductions to JITs often show - instead it has a proper intermediate representation (IR) and shows how more advanced parts of compilers such as lowering and schedulers work, that people don't usually cover.
 
 Unforutnately Rhizome was a stalled side-project that I never finished. The current state of the repository is as I left it off.
 
